@@ -11,7 +11,7 @@ import sys
 class DisplayThread(Thread):
     def __init__(self):
         Thread.__init__(self)
-        self.daemon = True
+        self.daemon = False
 
     def run(self):
         i = 0

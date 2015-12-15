@@ -13,6 +13,10 @@ if __name__ == '__main__':
         th1.start()
         while True:
             display.time.sleep(1)
+            print("lol")
+            r = raw_input()
+            if r == '1':
+                break
     except (KeyboardInterrupt, SystemExit):
         print('goodbye !')
 
