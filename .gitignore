@@ -1,2 +1,4 @@
 .idea/
 python27/
+source/.cache
+source/.coverage
