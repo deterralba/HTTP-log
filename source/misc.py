@@ -5,6 +5,7 @@ from __future__ import (unicode_literals, absolute_import, division, print_funct
 
 import time
 import Queue
+import io
 from threading import Thread, Lock
 
 
@@ -72,26 +73,41 @@ class Misc(Thread):
         time.sleep(0.1)
         print('GETTER ', temp, 'got at', time.time())
 
+
+def EOF_reader():
+    with io.open('../data/test') as f:
+        last_tell = f.tell()
+        EOF = False
+        i=0
+
+        while not EOF:
+            print('begining of line ', i+1, f.tell(), f.readline().strip(), f.tell())
+            if last_tell == f.tell():
+                print("EOF in line", i+1)
+                EOF = True
+            last_tell = f.tell()
+            i+=1
+
 if __name__ == '__main__':
 
-    q = Queue.Queue()
-    rth = Misc('../data/log_test', q, put=False)
-    rth2 = Misc('../data/log_test', q)
+    # q = Queue.Queue()
+    # rth = Misc('../data/log_test', q, put=False)
+    # rth2 = Misc('../data/log_test', q)
+    #
+    # rth.start()
+    # # time.sleep(1)
+    # # rth.print_me('coucou')
+    # # time.sleep(1)
+    # # rth.print_me('coucou')
+    #
+    # # print(rth.var)
+    # # rth.setVar(2)
+    # # print(rth.var)
+    #
+    # # rth.alphabet()
+    # # rth.print_me("coucou")
+    #
+    # rth2.start()
 
-    rth.start()
-    # time.sleep(1)
-    # rth.print_me('coucou')
-    # time.sleep(1)
-    # rth.print_me('coucou')
 
-    # print(rth.var)
-    # rth.setVar(2)
-    # print(rth.var)
-
-    # rth.alphabet()
-    # rth.print_me("coucou")
-
-    rth2.start()
-
-
-    # rth.should_run = False
+    EOF_reader()

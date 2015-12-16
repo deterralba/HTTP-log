@@ -41,6 +41,7 @@ def test_get_section():
     assert reader.get_section("GET /section HTTP/1.1") == '/section'
     assert reader.get_section("GET /image.png HTTP/1.1") == '/image.png'
     assert reader.get_section("GET /section1/image.png HTTP/1.1") == '/section1'
+    assert reader.get_section("GET / HTTP/1.1") == '/'
     assert reader.get_section("wrong request") == None
 
 
