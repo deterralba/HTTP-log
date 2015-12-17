@@ -4,41 +4,74 @@
 from __future__ import (unicode_literals, absolute_import, division, print_function)
 
 from threading import Thread
-import io
 from random import randint
-import time
-import reader
-import os
+
 import datetime
+import time
+
+import io
+import os
+
+
+class LogSimulatorConfigFileError(Exception):
+    pass
 
 
 class LogSimulator(Thread):
+    """Simulates a real actively writen HTTP access log: writes lines in a given log file
+    at given speeds during given times. All theses parameters are read in a given config file."""
+
     def __init__(self, config_path):
+        """
+        Args
+        ----
+        config_path: the path of the file where arguments and command should be read
+        """
         Thread.__init__(self)
         self.config_path = config_path
 
     def run(self):
+        """Reads the config file given, and executes the commands read with the read parameters
+
+        Raises
+        ------
+        LogSimulatorConfigFileError: when the config file path is incorrect or the command or parameters not recognized
+        """
         try:
             config_file = io.open(self.config_path)
         except Exception:
-            raise
-            # print("wrong config path '{}' for LogSimulator".format(self.config_path))
+            raise LogSimulatorConfigFileError("Error while opening the config file '{}' for the LogSimulator, "
+                                              "is the given path correct ?".format(self.config_path))
 
-        param_dict = {'erase_first': True}
+        # this is the dict used to store the arguments of LogWriter()
+        param_dict = {'erase_first': True}  # the first loop must create a clean the log_file (ie erase and recreate it)
+
+        # the config file is read a first time to obtain the arguments and store them in param_dict
         for line in config_file:
-            if not line.strip().startswith('#'):
+            if not line.strip().startswith('#'):  # commented lines are ignored
+
+                # a line with '=' should be a parameter line, defining either 'log_path' or 'line_type'
                 if "=" in line:
                     key, value = (word.strip() for word in line.split('='))
                     if key in ['log_path', 'line_type']:
                         param_dict[key] = value
+                    else:
+                        raise LogSimulatorConfigFileError("Error while reading the config file at line '{}'".format(line))
+
+                # a line without '=' should be a command line 'pace, timeout', calling a LogWriter
                 else:
-                    param_dict['pace'], param_dict['timeout'] = [int(i) for i in line.split(',')]
+                    try:
+                        param_dict['pace'], param_dict['timeout'] = [int(i) for i in line.split(',')]
+                    except Exception:
+                        raise LogSimulatorConfigFileError("Error while reading the config file at line '{}'".format(line))
+
                     print(param_dict)
                     log_w = LogWriter(**param_dict)
                     log_w.start()
                     log_w.join()
 
-                    if param_dict['erase_first']:
+                    # log_file shouldn't be erased again after the first loop
+                    if param_dict['erase_first']:  # only True in the first loop
                         param_dict['erase_first'] = False
 
 
