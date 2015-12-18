@@ -4,8 +4,8 @@
 from __future__ import (unicode_literals, absolute_import, division, print_function)
 
 from threading import Thread
+
 import time
-import sys
 
 
 class DisplayThread(Thread):
@@ -30,7 +30,6 @@ class InputThread(Thread):
         while True:
             i = raw_input()
             print(i)
-            print(sys.stdin.isatty())
 
 if __name__ == '__main__':
     th = DisplayThread()

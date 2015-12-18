@@ -14,19 +14,21 @@ import os
 
 
 class LogSimulatorConfigFileError(Exception):
+    """Raised when the path or the format of the config file is incorrect"""
     pass
 
 
 class LogSimulator(Thread):
     """Simulates a real actively writen HTTP access log: writes lines in a given log file
-    at given speeds during given times. All theses parameters are read in a given config file."""
+    at given speeds during given times. All theses parameters are read in a given config file.
+
+    Attributes
+    ----------
+    config_path: string
+        The path to the config file where the parameters and the command for the simulation are stored.
+    """
 
     def __init__(self, config_path):
-        """
-        Args
-        ----
-        config_path: the path of the file where arguments and command should be read
-        """
         Thread.__init__(self)
         self.config_path = config_path
 
@@ -76,12 +78,39 @@ class LogSimulator(Thread):
 
 
 class LogWriter(Thread):
-    """Writes a given type of lines in the file given by the log_path at a given speed during a given time"""
+    """Writes a given type of lines in the file given by the log_path at a given speed during a given time.
+
+    Attributes
+    ----------
+    log_path: string
+        The path to the log file, may already exist and will be erased or may not exist and will be create
+        (see :attr:`erase_first`)
+
+    line_type: string
+        The type of line that that should be writen in the log, can be:
+
+            * ``'line'``: ``lineX`` will be writen, where ``X`` is the number of the line writen (fastest)
+            * ``'HTTP_fast'``: an HTTP access line will be writen, but only the HTTP request will be random (slower)
+            * ``'HTTP_slow'``: an HTTP access line will be writen, everything will be random (slowest)
+
+    pace: int
+        The number of line that should be writen every second, can go up to 25 000. If the IO stream cannot follow
+        the pace, a message is written in the console.
+        ==========================TODO===================================
+        change the precedent behavior : do not write msg in the console
+        ==========================TODO===================================
+
+    timeout: int
+        The number of seconds meanwhile the log should be writen, never stop if ``timeout == -1``, minimum timeout is 1.
+
+    erase_first: bool
+        If True, the log_path is erased before being writen (log file is opened in ``'at'`` mode)
+
+    should_run: bool
+        Used to get out of the infinite while loop when the user want to stop the program
+
+    """
     def __init__(self, log_path, line_type='HTTP_slow', pace=3000, timeout=-1, erase_first=True):
-        """
-        Args
-        ----
-        """
         Thread.__init__(self)
 
         self.log_path = log_path
@@ -91,9 +120,13 @@ class LogWriter(Thread):
         self.erase_first = erase_first
 
         self.should_run = True
-        self.log_file = None
 
     def run(self):
+        """
+        ==========================TODO===================================
+        commment the run fct
+        ==========================TODO===================================
+        """
         line_count = 0
         start_time = time.time()
         if self.erase_first:
@@ -102,7 +135,7 @@ class LogWriter(Thread):
                 print("Log file found and erased")
             except Exception:
                 print("Log file not found, will be created")
-        self.log_file = io.open(self.log_path, 'at')
+        log_file = io.open(self.log_path, 'at')
 
         # the function that will generate the lines is bound once for all
         random_line = random_log_line(self.line_type)
@@ -119,8 +152,8 @@ class LogWriter(Thread):
             date = datetime.datetime.utcnow().strftime('[%d/%b/%Y:%X +0000]')  # ' {:+03d}00]'.format(randint(-12, 12))
             print('start :', start_time_second)
             while line_count_second < self.pace and self.should_run:
-                self.log_file.write(random_line(date=date, line_count=line_count) + '\n')
-                self.log_file.flush()
+                log_file.write(random_line(date=date, line_count=line_count) + '\n')
+                log_file.flush()
                 line_count += 1
                 line_count_second += 1
                 if line_count % 1000 == 0:
@@ -139,40 +172,60 @@ class LogWriter(Thread):
             print('end :', time.time(), 'line_count :', line_count, '\n==========')
 
         print('LogWriter end after {} lines in {:.4f}s'.format(line_count, time.time()-start_time))
-        self.log_file.close()
+        log_file.close()
 
 
 def random_local_URL(factor, max_depth):
-    """Return a random local URL
+    """
+    Returns
+    -------
+    string
+        A random local URL
 
-    NB number of section = len(section) * factor
-    NB max_depth is the highest number possible of /section/subsection/subsubsection/etc.
-    Ex /archive2/blog0/archive2/page1/ -> depth = 4
+    Notes
+    -----
+    ``number of section = len(section) * factor``
+
+    ``max_depth`` is the highest number possible of /section/subsection/subsubsection/etc.
+    ``/archive2/blog0/archive2/page1/ -> depth = 4``
 
     Examples
     --------
-    /              <- min_depth without URL_end
-    /index.html    <- min_depth with URL_end
-    /page0/
-    /archive0/blog1/
-    /blog0/picture.png
-    /page0/archive1/archive2/index.html
-    /archive2/archive0/archive2/archive2/form.php    <- max_depth = 4, with URL_end
+    * ``/``              <- min_depth without URL_end
+    * ``/index.html``    <- min_depth with URL_end
+    * ``/page0/``
+    * ``/archive0/blog1/``
+    * ``/blog0/picture.png``
+    * ``/page0/archive1/archive2/index.html``
+    * ``/archive2/archive0/archive2/archive2/form.php``    <- max_depth = 4, with URL_end
      """
     # print(factor, max_depth)
     section = ['page', 'blog', 'archive']
-    URL_begging = [word + str(i) for i in xrange(factor) for word in section]
+    URL_begging = [word + str(i) for i in xrange(factor) for word in section]  # add an integer at the end of the section
     URL_end = ['picture.png', 'index.html', 'form.php']
     return '/' + '/'.join([URL_begging[randint(0, len(URL_begging)-1)] for i in xrange(randint(0, max_depth))] +
                           [URL_end[randint(0, len(URL_end)-1)]*(randint(0, 4) >= 1)])
 
 
 def random_HTTP_request(**kwargs):
+    """
+    Returns
+    -------
+    string
+        A random HTTP request, the local URL is given by :func:`random_local_URL`
+
+    Examples
+    --------
+    * ``"HEAD /index.html HTTP/1.1"``
+    * ``"GET /page0/ HTTP/1.1"``
+    * ``"DELETE /archive0/blog1 HTTP/1.1"``
+    """
     method = ['HEAD', 'GET', 'OPTIONS', 'TRACE', 'POST', 'PUT', 'DELETE', 'PATCH', 'CONNECT'][randint(0, 8)]
     return '"{} {} {}"'.format(method, random_local_URL(**kwargs), 'HTTP/1.1')
 
 
 def random_log_line(line_type, **kwargs):
+    """Returns the right line writer function, depending of the parameters"""
     if line_type == 'HTTP_fast':
         print("generating fast")
         request_param = {'factor': 4, 'max_depth': 2}
@@ -215,14 +268,19 @@ def random_log_line(line_type, **kwargs):
         raise ValueError('line_type={} is an incorrect parameter'.format(line_type))
 
 if __name__ == '__main__':
+
+    # ls = LogSimulator('../data/sim_config')
+    # ls.start()
+
     # import reader
     # #log_path = os.path.expanduser('~') + '\log.txt'
-    # log_path = '../data/wtest'
-    # pace = 5
-    #
-    # lw = LogWriter(log_path, line_type='line', timeout=1, pace=pace)
-    # lw.start()
-    # lw.join()
+
+    log_path = '../data/wtest'
+    pace = 5
+
+    lw = LogWriter(log_path, line_type='line', timeout=1, pace=pace)
+    lw.start()
+    lw.join()
     #
     # lw = LogWriter(log_path, line_type='HTTP_fast', timeout=1, pace=pace)
     # lw.start()
@@ -238,9 +296,6 @@ if __name__ == '__main__':
     # f.write('50, 2\n')
     # f.flush()
     # f.close()
-
-    ls = LogSimulator('../data/sim_config')
-    ls.start()
 
     # rd = reader.ReaderThread(log_path)
     # time.sleep(0.1)
