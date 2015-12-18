@@ -272,15 +272,15 @@ if __name__ == '__main__':
     # ls = LogSimulator('../data/sim_config')
     # ls.start()
 
-    # import reader
+    import reader
     # #log_path = os.path.expanduser('~') + '\log.txt'
 
     log_path = '../data/wtest'
-    pace = 5
+    pace = 25000
 
-    lw = LogWriter(log_path, line_type='line', timeout=1, pace=pace)
+    lw = LogWriter(log_path, line_type='HTTP_fast', timeout=10, pace=pace)
     lw.start()
-    lw.join()
+    # lw.join()
     #
     # lw = LogWriter(log_path, line_type='HTTP_fast', timeout=1, pace=pace)
     # lw.start()
@@ -297,11 +297,11 @@ if __name__ == '__main__':
     # f.flush()
     # f.close()
 
-    # rd = reader.ReaderThread(log_path)
-    # time.sleep(0.1)
-    # rd.start()
-    # time.sleep(5)
-    # rd.should_run = False
+    rd = reader.ReaderThread(log_path)
+    time.sleep(0.1)
+    rd.start()
+    time.sleep(11)
+    rd.should_run = False
 
     # print(random_log_line())
 

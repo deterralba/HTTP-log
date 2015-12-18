@@ -53,10 +53,12 @@ class ReaderThread(Thread):
             # self.log_file.seek(0,0)
             temp_count = 0
             while not EOF:
-                if temp_count == 500:
-                    temp_count = 0
-                    print('lines read up to', i)
-                temp_count += 1
+                # if temp_count == 500:
+                #     temp_count = 0
+                #     print('lines read up to', i)
+                # temp_count += 1
+
+
                 # print(self.log_file.tell())
                 # print('begining of line', i + 1, ':', self.log_file.tell(), '"',
                 #       self.log_file.readline().strip(), '"', self.log_file.tell())
@@ -69,7 +71,7 @@ class ReaderThread(Thread):
                     # print('read:', line)
                     self.reader_queue.put(line)
                 # last_tell = self.log_file.tell()
-            print("empty queue")
+            # print("empty queue")
             # self.reader_queue = Queue()
             # print(time.time() - t)
             time.sleep(0.1)
@@ -152,4 +154,4 @@ if __name__ == '__main__':
     # rth.daemon = False
     # rth.start()
     # time.sleep(0.2)
-    #rth.should_run = False
+    # rth.should_run = False
