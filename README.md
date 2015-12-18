@@ -1,5 +1,4 @@
 # HTTP-log
-#tictactoe
 An HTTP access log monitoring program
 
 ##Documentation
