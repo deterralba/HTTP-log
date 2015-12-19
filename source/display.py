@@ -8,10 +8,10 @@ from threading import Thread
 import time
 
 
-class DisplayThread(Thread):
-    def __init__(self):
+class Displayer(Thread):
+    def __init__(self, monitor):
         Thread.__init__(self)
-        self.daemon = False
+        self.monitor = monitor
 
     def run(self):
         i = 0
@@ -32,7 +32,7 @@ class InputThread(Thread):
             print(i)
 
 if __name__ == '__main__':
-    th = DisplayThread()
+    th = Displayer()
     th.start()
     th2 = InputThread()
     th2.start()

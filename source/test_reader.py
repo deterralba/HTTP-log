@@ -9,7 +9,7 @@ import datetime
 
 def test_read_log():
     res = ['127.0.0.1 - frank [10/Oct/2000:13:55:36 -0700] "GET /apache_pb.gif HTTP/1.0" 200 2326',
-           'x.x.x.90 - - [13/Sep/2006:07:01:53 -0700]'
+           'x.x.x.90 - - [13/Sep/2006:07:01:53 -0700] '
            '"PROPFIND /svn/[xxxx]/Extranet/branches/SOW-101 HTTP/1.1" 401 587']
     assert reader.read_log('../data/log_test')[:2] == res
     with pytest.raises(IOError):
@@ -43,6 +43,6 @@ def test_get_section():
     assert reader.get_section("GET /image.png HTTP/1.1") == '/image.png'
     assert reader.get_section("GET /section1/image.png HTTP/1.1") == '/section1'
     assert reader.get_section("GET / HTTP/1.1") == '/'
-    assert reader.get_section("wrong request") == None
+    assert reader.get_section("wrong request") is None
 
 

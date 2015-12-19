@@ -14,12 +14,13 @@ def test_random_local_URL():
     assert check_local_URL('') is False
     assert check_local_URL('/ /') is False
 
-    for i in xrange(10):
+    for i in xrange(100):
         assert check_local_URL(log_writer.random_local_URL(factor=4, max_depth=4)) is True
-
 
 def check_local_URL(URL):
     """Return True is URL starts with '/' and doesn't contain any whitespace character"""
     return URL.startswith('/') and re.search(r'\s', URL) is None
+
+
 
 
