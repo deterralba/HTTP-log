@@ -32,6 +32,7 @@ class Statistics:
             # print(get_section(HTTP_dict['request']))
 
             last_section = get_section(HTTP_dict['request'])
+            # print(HTTP_dict['request'], last_section)
             # print(last_section)
             if last_section is not None:  # TODO an error should be raised
                 if last_section in self.section:
@@ -43,7 +44,7 @@ class Statistics:
 
     def get_last_stats(self):
         with self.lock:
-            max_section, max_hit  = max(self.section.iteritems(), key=itemgetter(1))
+            max_section, max_hit = max(self.section.iteritems(), key=itemgetter(1))
             return max_section, max_hit
 
     def reset_stat(self):
@@ -53,17 +54,17 @@ class Statistics:
             self.total_broadband = 0
 
 
-class Monitor(Thread):
+class Statistician(Thread):
     """ """
 
     def __init__(self, input_queue, sleeping_time=0.1):
         Thread.__init__(self)
 
         self.input_queue = input_queue
+        self.sleeping_time = sleeping_time
 
         self.stat = Statistics()
         self.should_run = True
-        self.sleeping_time = sleeping_time
 
     def run(self):
         """ """
@@ -72,10 +73,12 @@ class Monitor(Thread):
             # print(self.input_queue.qsize())
 
             # while self.input_queue.qsize() > 0:
-            if time.time() - last_display_time > 1:
-                self.display()
-                self.stat.reset_stat()
-                last_display_time = time.time()
+
+            # if time.time() - last_display_time > 1:
+            #     self.display()
+            #     self.stat.reset_stat()
+            #     last_display_time = time.time()
+
             try:
                 log_line = self.input_queue.get(block=True, timeout=0.1)
             except Empty:
@@ -91,8 +94,8 @@ class Monitor(Thread):
 
         # print(self.stat.get_last_stats())
 
-        max_l = []
-        l = list(self.stat.section.iteritems())
+        # max_l = []
+        # l = list(self.stat.section.iteritems())
         # print(l)
         # max_l.append(max(l, key=itemgetter(1)))
         # print(max_l)
@@ -101,17 +104,11 @@ class Monitor(Thread):
         # l = sorted(self.stat.section.iteritems(), key=itemgetter(1), reverse=True)
         # print(l[:3])
 
-    def display(self):
-        stat = self.stat.get_last_stats()
-        print('='*60)
-        print('Most visited section:', stat[0], 'with', stat[1], 'hits.')
-        print('='*60)
-
 
 class QueueWriter(Thread):
     """ """
 
-    def __init__(self, output_queue, pace10=1, factor=3):
+    def __init__(self, output_queue, pace10=1, factor=2):
         Thread.__init__(self)
 
         self.output_queue = output_queue
@@ -171,6 +168,7 @@ def parse_line(line):
         # the date is transformed in a datetime.datetime object
         date = HTTP_dict['date']
         # the used of a delta is necessary to get real utc time because '%z' doesn't work in python<3.2!
+        #TODO change that method that is too slow !!
         delta = datetime.timedelta(hours=int(date[-5:]) / 100)
         HTTP_dict['date'] = datetime.datetime.strptime(date[:-6], '%d/%b/%Y:%X') - delta
     except:
@@ -180,9 +178,11 @@ def parse_line(line):
 
 
 def get_section(request):
-    """Return the section name from a GET request, or None if not a proper GET request"""
-    section = re.match(r'^\S*\s*(/[^/ ]*)', request.strip())
+    """Return the section name from a HTTP request, or None if not a proper HTTP request"""
+    section = re.match(r'^\S+\s+(/[^/ ]*)', request.strip())
+    # section = re.match(r'^(/[^/ ]*)', request.strip())
     if section is not None:
+        # print(request, section.group(1))
         return section.group(1)
     return None
 
@@ -197,7 +197,7 @@ if __name__ == '__main__':
         putter.start()
 
         if with_getter:
-            m = Monitor(q)
+            m = Statistician(q)
             m.start()
 
         time.sleep(10)

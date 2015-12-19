@@ -19,11 +19,13 @@ class LogReader(Thread):
     comment and clean this code !
     ====================TODO===============
     """
-    def __init__(self, log_path, sleeping_time=0.1):
+    def __init__(self, log_path, sleeping_time=0.1, parse=False):
         Thread.__init__(self)
-        self.log_path = log_path
 
+        self.log_path = log_path
         self.sleeping_time = sleeping_time
+        self.parse = parse
+
         self.should_run = True
         self.output_queue = Queue()
 
@@ -34,39 +36,59 @@ class LogReader(Thread):
             print('WRONG PATH TO LOG FILE')
             raise
 
+        if self.parse:
+            import statistician
+
         i = 0
+
+        # print sys 2
+        last_printed_time = time.time()
+        since_last_printed = 0
+
         while self.should_run:
             # print('reader started')
-            # last_tell = self.log_file.tell()
             EOF = False
             # t = time.time()
-            #
-            # self.log_file = io.open(self.log_path, 'rt')
-            # for line in self.log_file:
-            #     print("resd", line)
-
-
-            # self.log_file.seek(0,0)
-            temp_count = 0
+            # temp_count = 0
             while not EOF:
                 # if temp_count == 500:
                 #     temp_count = 0
                 #     print('lines read up to', i)
                 # temp_count += 1
 
-
-                # print(self.log_file.tell())
-                # print('begining of line', i + 1, ':', self.log_file.tell(), '"',
-                #       self.log_file.readline().strip(), '"', self.log_file.tell())
                 line = log_file.readline()
                 if not line:
                     # print("EOF in line", i + 1)
                     EOF = True
+
+                    # sys1 EOF info
+                    last_EOF = 0
+                    last_EOF_time = time.time()
                 else:
                     i += 1
+
+                    # sys1 EOF info
+                    last_EOF += 1
+                    if last_EOF % 10000 == 0:
+                        print('last EOF', last_EOF, 'lines ago !', time.time()-last_EOF_time,' ago')
+
+                    # sys2 EOF info
+                    since_last_printed += 1
+                    if since_last_printed % 100 == 0:
+                        delta = time.time() - last_printed_time
+                        if delta > 1:
+                            print(since_last_printed, 'lines parsed last', delta, 's')
+                            last_printed_time = time.time()
+                            since_last_printed = 0
+
+
                     line = line.strip()
                     if not line.startswith('#') and len(line) > 0:
-                        self.output_queue.put(line)
+                        if self.parse:
+                            self.output_queue.put(statistician.parse_line(line))
+                        else:
+                            self.output_queue.put(line)
+
                     # print('read:', line)
 
             # print("empty queue")

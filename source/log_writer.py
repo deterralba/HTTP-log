@@ -179,7 +179,7 @@ class LogWriter(Thread):
             delta = time.time() - start_time_second
             # print('delta :', delta)
             if delta < 1 and line_count_second == self.pace:  # check that line !!
-                print('waiting for :', 1 - delta)
+                # print('waiting for :', 1 - delta)
                 time.sleep(1 - delta)
             else:
                 print('writing operations are too slow, change line_type or reduce pace, '
@@ -191,12 +191,44 @@ class LogWriter(Thread):
         time.sleep(0.005)  # little pause to avoid IOError when reopening the file just after closing it (on Windows)
 
 
-def random_local_URL(factor=3, max_depth=4):
+def generate_all_URL_possible(factor=2, max_depth=2):
+    section = ['page', 'blog', 'archive']
+    URL_beggining = [word + str(i) for word in section for i in xrange(1, factor+1)]  # add an integer at the end of the section
+    URL_end = ['picture.png', 'index.html']  # 'form.php', 'script.js', 'style.css',
+
+    if max_depth >= 1:
+        l = ['/' + sect + '/' for sect in URL_beggining]
+        for i in xrange(1, max_depth):
+            l.extend([base + sect + '/' for base in l for sect in URL_beggining])
+    l.append('/')
+
+    l.extend([word + end for word in l for end in URL_end])
+    # print(l)
+    return l
+
+
+def uniform_random_local_URL_maker(factor=2, max_depth=2):
+    l = generate_all_URL_possible(factor, max_depth)
+    length_l = len(l)
+    # print(length_l)
+
+    def uniform_random_local_URL():
+        return l[randint(0, length_l-1)]
+    return uniform_random_local_URL
+
+
+def random_local_URL(factor=2, max_depth=2):
     """
     Returns
     -------
     string
         A random local URL
+
+    Warning
+    -------
+    The repartition of the returned URL is not uniform ! ULR with 0-depth (ie '/', with or without file name)
+    are returned more often that longer URL.
+    Use :func:`uniform_random_local_URL_maker` to get a ``uniform_random_local_URL`` function.
 
     Notes
     -----
@@ -204,6 +236,7 @@ def random_local_URL(factor=3, max_depth=4):
 
     ``max_depth`` is the highest number possible of /section/subsection/subsubsection/etc.
     ``/archive2/blog0/archive2/page1/ -> depth = 4``
+
 
     Examples
     --------
@@ -217,15 +250,20 @@ def random_local_URL(factor=3, max_depth=4):
      """
     # print(factor, max_depth)
     section = ['page', 'blog', 'archive']
-    URL_begging = [word + str(i) for i in xrange(factor) for word in
+    URL_begging = [word + str(i) for i in xrange(1, factor+1) for word in
                    section]  # add an integer at the end of the section
-    URL_end = ['picture.png', 'index.html', 'form.php']
+    URL_end = ['picture.png', 'index.html', '']  # 'form.php', 'script.js', 'style.css', '']
     return '/' + '/'.join([URL_begging[randint(0, len(URL_begging) - 1)] for i in xrange(randint(0, max_depth))] +
-                          [URL_end[randint(0, len(URL_end) - 1)] * (randint(0, 4) >= 1)])
+                          [URL_end[randint(0, len(URL_end) - 1)]])  # * (randint(0, 4) >= 1)])
 
 
-def random_HTTP_request(**kwargs):
+def random_HTTP_request(URL):
     """
+    Argument
+    --------
+    URL: string
+        The URL that will be written in the HTTP request
+
     Returns
     -------
     string
@@ -235,10 +273,10 @@ def random_HTTP_request(**kwargs):
     --------
     * ``"HEAD /index.html HTTP/1.1"``
     * ``"GET /page0/ HTTP/1.1"``
-    * ``"DELETE /archive0/blog1 HTTP/1.1"``
+    * ``"DELETE /archive0/blog1/ HTTP/1.1"``
     """
     method = ['HEAD', 'GET', 'OPTIONS', 'TRACE', 'POST', 'PUT', 'DELETE', 'PATCH', 'CONNECT'][randint(0, 8)]
-    return '"{} {} {}"'.format(method, random_local_URL(**kwargs), 'HTTP/1.1')
+    return '"{} {} {}"'.format(method, URL, 'HTTP/1.1')
 
 
 def random_log_line_maker(line_type, **kwargs):
@@ -258,12 +296,13 @@ def random_log_line_maker(line_type, **kwargs):
         # print("generating fast")
         request_param = {'factor': 4, 'max_depth': 2}
         request_param.update(kwargs)
+        random_URL = uniform_random_local_URL_maker(**request_param)
 
         def fast_rand(date=0, line_count=0):
             remote_host = '123.12.45.78'
             remote_log_name = '-'
             auth_user = '-'
-            request = random_HTTP_request(**request_param)
+            request = random_HTTP_request(random_URL())
             status = '100'
             bytes_ = '1500'
             return " ".join([remote_host, remote_log_name, auth_user, date, request, status, bytes_])
@@ -274,12 +313,13 @@ def random_log_line_maker(line_type, **kwargs):
         # print("generating slow")
         request_param = {'factor': 4, 'max_depth': 4}
         request_param.update(kwargs)
+        random_URL = uniform_random_local_URL_maker(**request_param)
 
         def slow_rand(date=0, line_count=0):
             remote_host = ".".join([str(randint(0, 255)) for i in xrange(4)])
             remote_log_name = '-'
             auth_user = '-'
-            request = random_HTTP_request(**request_param)
+            request = random_HTTP_request(random_URL())
             status = str(100 * randint(1, 5) + randint(0, 5))
             bytes_ = str(randint(0, 10e4))
             return " ".join([remote_host, remote_log_name, auth_user, date, request, status, bytes_])
@@ -301,7 +341,9 @@ def random_log_line_maker(line_type, **kwargs):
 
 if __name__ == '__main__':
 
-    def benchmark_LogWriter(pace_list=(5000, 10000, 25000), line_type_list=('line', 'HTTP_fast', 'HTTP_slow'), timeout=1):
+    def benchmark_LogWriter(pace_list=(5000, 10000, 25000),
+                            line_type_list=('line', 'HTTP_fast', 'HTTP_slow'),
+                            timeout=1):
         log_path = '../data/wtest'
         pace_line_type = [(pace, line_type) for pace in pace_list for line_type in line_type_list]
         for pace, line_type in pace_line_type:
@@ -314,7 +356,7 @@ if __name__ == '__main__':
     # benchmark_LogWriter(pace_list=[10e9])
 
 
-    def simulate_writer_and_reader(with_reader=True):
+    def simulate_writer_and_reader(with_reader=True, reader_parse=False):
         import reader
         log_path = '../data/wtest'
         config_path = '../data/sim_config'
@@ -322,7 +364,7 @@ if __name__ == '__main__':
         ls.start()
         time.sleep(0.01)  # pause to let the LogWriter write
         if with_reader:
-            rd = reader.LogReader(log_path)
+            rd = reader.LogReader(log_path, parse=reader_parse)
             rd.start()
 
         ls.join()
@@ -330,7 +372,7 @@ if __name__ == '__main__':
         if with_reader:
             rd.should_run = False
 
-    simulate_writer_and_reader(with_reader=True)
+    simulate_writer_and_reader(with_reader=True, reader_parse=True)
 
 
     # ===== Performance tests =====
@@ -338,10 +380,22 @@ if __name__ == '__main__':
     # print(timeit.timeit("''.join(['line', str(1234)])", number=1000))
     # print(timeit.timeit("'line' + str(1234)", number=1000))
 
+
     # ===== HTTP access log line generation =====
-    # [print(random_local_URL()) for i in xrange(5)]
-    # [print(random_HTTP_request()) for i in xrange(5)]
+    # local_URL = uniform_random_local_URL_maker()
+    # [print(local_URL()) for i in xrange(5)]
+    # [print(random_HTTP_request(local_URL())) for i in xrange(5)]
     # [print(random_log_line_maker(i)(date=str(datetime.datetime.utcnow().strftime('[%d/%b/%Y:%X +0000]')), line_count=j))
     #     for i in ['line', 'HTTP_fast', 'HTTP_slow']
     #     for j in xrange(5)]
+
+
+    # print(len(generate_all_URL_possible()))
+    # uniform_random_local_URL = uniform_random_local_URL_maker()
+    # print(len(set([uniform_random_local_URL() for i in xrange(50000)])))
+    # [print(s) for s in set([uniform_random_local_URL() for i in xrange(50000)]) if s not in generate_all_URL_possible()]
+    # print(len(set(generate_all_URL_possible())))
+    # print(generate_all_URL_possible())
+
+    # [print(uniform_random_local_URL()) for i in xrange(5000)]
 

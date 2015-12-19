@@ -28,7 +28,7 @@ class Monitor(Thread):
             self.input_queue.put(123)
 
 if __name__ == '__main__':
-    # m = Monitor(Queue())
+    # m = Statistician(Queue())
     # m.input_queue.put(123)
     # print(m.input_queue)
 
