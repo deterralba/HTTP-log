@@ -5,6 +5,8 @@ from __future__ import (unicode_literals, absolute_import, division, print_funct
 
 import time
 
+from display import LogLevel, Displayer
+
 import display
 import statistician
 import reader

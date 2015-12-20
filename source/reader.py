@@ -6,6 +6,8 @@ from __future__ import (unicode_literals, absolute_import, division, print_funct
 from threading import Thread
 from Queue import Queue
 
+from display import LogLevel, Displayer
+
 import io
 import re
 
@@ -44,6 +46,8 @@ class LogReader(Thread):
         # print sys 2
         last_printed_time = time.time()
         since_last_printed = 0
+        last_EOF = 0
+        last_EOF_time = time.time()
 
         while self.should_run:
             # print('reader started')

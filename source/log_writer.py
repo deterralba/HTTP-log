@@ -321,7 +321,7 @@ def random_log_line_maker(line_type, **kwargs):
             auth_user = '-'
             request = random_HTTP_request(random_URL())
             status = str(100 * randint(1, 5) + randint(0, 5))
-            bytes_ = str(randint(0, 10e4))
+            bytes_ = str(randint(0, 1e4))
             return " ".join([remote_host, remote_log_name, auth_user, date, request, status, bytes_])
 
         return slow_rand
@@ -353,7 +353,7 @@ if __name__ == '__main__':
             lw.start()
             lw.join()
 
-    # benchmark_LogWriter(pace_list=[10e9])
+    # benchmark_LogWriter(pace_list=[1e9])
 
 
     def simulate_writer_and_reader(with_reader=True, reader_parse=False):

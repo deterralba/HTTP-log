@@ -11,6 +11,7 @@ import datetime
 import re
 import time
 
+from display import LogLevel, Displayer
 import log_writer
 
 
@@ -44,8 +45,11 @@ class Statistics:
 
     def get_last_stats(self):
         with self.lock:
-            max_section, max_hit = max(self.section.iteritems(), key=itemgetter(1))
-            return max_section, max_hit
+            try:
+                max_section, max_hit = max(self.section.iteritems(), key=itemgetter(1))
+                return max_section, max_hit
+            except ValueError:
+                return 0, 0
 
     def reset_stat(self):
         with self.lock:
@@ -90,6 +94,7 @@ class Statistician(Thread):
             # print('queue empty', self.input_queue.qsize())
             # print(self.stat.section)
             if self.input_queue.qsize() == 0:
+                print("queue empty")
                 time.sleep(self.sleeping_time)
 
         # print(self.stat.get_last_stats())
