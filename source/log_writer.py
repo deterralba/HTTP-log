@@ -6,6 +6,8 @@ from __future__ import (unicode_literals, absolute_import, division, print_funct
 from threading import Thread
 from random import randint
 
+import display as d
+
 import datetime
 import time
 
@@ -31,6 +33,9 @@ class LogSimulator(Thread):
     def __init__(self, config_path):
         Thread.__init__(self)
         self.config_path = config_path
+
+        self.total_nb_of_lines_previously_written = 0
+        self.log_w = None
 
     def run(self):
         """Reads the config file given, and executes the commands read with the read parameters
@@ -69,15 +74,23 @@ class LogSimulator(Thread):
                         raise LogSimulatorConfigFileError(
                             "Error while reading the config file at line '{}'".format(line))
 
-                    print(param_dict)
-                    log_w = LogWriter(**param_dict)
-                    log_w.start()
-                    log_w.join()
+                    # print(param_dict)
+                    param_dict['is_simulated'] = self
+                    self.log_w = LogWriter(**param_dict)
+                    self.log_w.start()
+                    self.log_w.join()
 
                     # log_file shouldn't be erased again after the first loop
                     if param_dict['erase_first']:  # only True in the first loop
                         param_dict['erase_first'] = False
         config_file.close()
+
+    def state(self):
+        total_number = self.total_nb_of_lines_previously_written
+        if self.log_w.is_alive():
+            print('is alive', self.log_w.nb_of_line_written)
+            total_number += self.log_w.nb_of_line_written
+        return 'Total number of line written: {}'.format(total_number)
 
 
 class LogWriter(Thread):
@@ -122,7 +135,7 @@ class LogWriter(Thread):
 
     """
 
-    def __init__(self, log_path, line_type='HTTP_slow', pace=3000, timeout=-1, erase_first=True):
+    def __init__(self, log_path, line_type='HTTP_slow', pace=3000, timeout=-1, erase_first=True, is_simulated=False):
         Thread.__init__(self)
 
         self.log_path = log_path
@@ -130,7 +143,9 @@ class LogWriter(Thread):
         self.pace = pace
         self.timeout = timeout
         self.erase_first = erase_first
+        self.is_simulated = is_simulated
 
+        self.nb_of_line_written = 0
         self.should_run = True
 
     def run(self):
@@ -141,12 +156,14 @@ class LogWriter(Thread):
         """
         line_count = 0
         start_time = time.time()
+
         if self.erase_first:
             try:
                 os.remove(self.log_path)
-                print("Log file found and erased")
+                d.displayer.log(self, d.LogLevel.DEBUG, 'Input log file found and erased')
             except Exception:
-                print("Log file not found, will be created")
+                d.displayer.log(self, d.LogLevel.DEBUG, 'Input log file file not found, will be created')
+
         log_file = io.open(self.log_path, 'at')
 
         # the function that will generate the lines is bound once for all
@@ -169,24 +186,33 @@ class LogWriter(Thread):
                 log_file.write(random_line(date=date, line_count=line_count) + '\n')
                 line_count += 1
                 line_count_second += 1
-                if line_count % 1000 == 0:
+                if line_count % 100 == 0:
                     log_file.flush()
+                    self.nb_of_line_written = line_count
                     date = datetime.datetime.utcnow().strftime('[%d/%b/%Y:%X +0000]')
                     # print("reset date at", line_count)
                 # print('written line', line_count-1)
                 # time.sleep(1.0/self.pace)
             log_file.flush()
+            self.nb_of_line_written = line_count
+
             delta = time.time() - start_time_second
             # print('delta :', delta)
             if delta < 1 and line_count_second == self.pace:  # check that line !!
                 # print('waiting for :', 1 - delta)
                 time.sleep(1 - delta)
             else:
-                print('writing operations are too slow, change line_type or reduce pace, '
-                      'lines writen this second:', line_count_second)
+                d.displayer.log(self, d.LogLevel.INFO,
+                                'Writing operations are too slow, change line_type or reduce pace, '
+                                'lines writen this second: {}'.format(line_count_second))
             # print('end :', time.time(), 'line_count :', line_count, '\n==========')
 
-        print('LogWriter end after {} lines in {:.4f}s'.format(line_count, time.time() - start_time))
+        d.displayer.log(self, d.LogLevel.DEBUG,
+                        'End writting after {} lines in {:.4f}s'.format(line_count, time.time() - start_time))
+
+        if self.is_simulated:
+            self.is_simulated.total_nb_of_lines_previously_written += self.nb_of_line_written
+
         log_file.close()
         time.sleep(0.005)  # little pause to avoid IOError when reopening the file just after closing it (on Windows)
 

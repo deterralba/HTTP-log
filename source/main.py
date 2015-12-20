@@ -7,25 +7,29 @@ import time
 
 from display import LogLevel, Displayer
 
-import display
-import statistician
+import display as d
 import reader
-
+import statistician
 
 
 if __name__ == '__main__':
+    reader_is_parsing = True
     log_path = '../data/wtest'
+    picasso = d.Displayer(display_period=1, debug=True)
+    picasso.log_level = d.LogLevel.INFO
 
     import log_writer
     shakespeare = log_writer.LogSimulator('../data/sim_config')
-    snoopy = reader.LogReader(log_path)
-    kolmogorov = statistician.Statistician(input_queue=snoopy.output_queue)
-    picasso = display.Displayer(statistician=kolmogorov, display_period=1)
+    snoopy = reader.LogReader(log_path, parse=reader_is_parsing)
+    kolmogorov = statistician.Statistician(input_queue=snoopy.output_queue, parse=not reader_is_parsing)
+    picasso.statistician = kolmogorov
+    picasso.registered_object = [shakespeare, snoopy, kolmogorov]
+    picasso.log_level = d.LogLevel.DEBUG
 
     shakespeare.start()
-    time.sleep(0.1)
+    time.sleep(0.01)
     snoopy.start()
-    time.sleep(0.1)
+    time.sleep(0.01)
     kolmogorov.start()
     picasso.start()
 

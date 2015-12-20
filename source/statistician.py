@@ -11,7 +11,7 @@ import datetime
 import re
 import time
 
-from display import LogLevel, Displayer
+import display as d
 import log_writer
 
 
@@ -61,18 +61,20 @@ class Statistics:
 class Statistician(Thread):
     """ """
 
-    def __init__(self, input_queue, sleeping_time=0.1):
+    def __init__(self, input_queue, sleeping_time=0.1, parse=True):
         Thread.__init__(self)
 
         self.input_queue = input_queue
         self.sleeping_time = sleeping_time
+        self.parse = parse
 
+        self.total_nb_of_treated_line = 0
         self.stat = Statistics()
         self.should_run = True
 
     def run(self):
         """ """
-        last_display_time = time.time()
+        # last_display_time = time.time()
         while self.should_run:
             # print(self.input_queue.qsize())
 
@@ -87,14 +89,17 @@ class Statistician(Thread):
                 log_line = self.input_queue.get(block=True, timeout=0.1)
             except Empty:
                 continue
-            HTTP_dict = parse_line(log_line)
+            if self.parse:
+                HTTP_dict = parse_line(log_line)
+            else:
+                HTTP_dict = log_line
             self.stat.upadate_stat(HTTP_dict)
+            self.total_nb_of_treated_line += 1
 
-
-            # print('queue empty', self.input_queue.qsize())
             # print(self.stat.section)
             if self.input_queue.qsize() == 0:
-                print("queue empty")
+                d.displayer.log(self, d.LogLevel.INFO, "Queue emptied")
+                # print("queue empty")
                 time.sleep(self.sleeping_time)
 
         # print(self.stat.get_last_stats())
@@ -109,9 +114,15 @@ class Statistician(Thread):
         # l = sorted(self.stat.section.iteritems(), key=itemgetter(1), reverse=True)
         # print(l[:3])
 
+    def state(self):
+        return 'total nb of treated line: {}, in queue: {}' \
+               ''.format(self.total_nb_of_treated_line, self.input_queue.qsize())
+
 
 class QueueWriter(Thread):
     """ """
+
+    d.Displayer(0)
 
     def __init__(self, output_queue, pace10=1, factor=2):
         Thread.__init__(self)
@@ -146,7 +157,7 @@ class QueueWriter(Thread):
         # print('total count', total_count)
 
 
-def parse_line(line):
+def parse_line(line, parse_date=False):
     """Parse a HTTP w3c formatted line and return a dictionary with the following keys:
     ``'remote_host', 'remote_log_name', 'auth_user', 'date', 'request', 'status', 'bytes'``
 
@@ -170,12 +181,13 @@ def parse_line(line):
     try:
         HTTP_dict['status'], HTTP_dict['bytes'] = int(HTTP_dict['status']), int(HTTP_dict['bytes'])
 
-        # the date is transformed in a datetime.datetime object
-        date = HTTP_dict['date']
-        # the used of a delta is necessary to get real utc time because '%z' doesn't work in python<3.2!
-        #TODO change that method that is too slow !!
-        delta = datetime.timedelta(hours=int(date[-5:]) / 100)
-        HTTP_dict['date'] = datetime.datetime.strptime(date[:-6], '%d/%b/%Y:%X') - delta
+        if parse_date:
+            # the date is transformed in a datetime.datetime object
+            date = HTTP_dict['date']
+            # the used of a delta is necessary to get real utc time because '%z' doesn't work in python<3.2!
+            #TODO change that method that is too slow !!
+            delta = datetime.timedelta(hours=int(date[-5:]) / 100)
+            HTTP_dict['date'] = datetime.datetime.strptime(date[:-6], '%d/%b/%Y:%X') - delta
     except:
         raise HTTPFormatError('incorrect HTTP format in line: {}'.format(line))
 

@@ -6,7 +6,7 @@ from __future__ import (unicode_literals, absolute_import, division, print_funct
 from threading import Thread
 from Queue import Queue
 
-from display import LogLevel, Displayer
+import display as d
 
 import io
 import re
@@ -21,6 +21,7 @@ class LogReader(Thread):
     comment and clean this code !
     ====================TODO===============
     """
+
     def __init__(self, log_path, sleeping_time=0.1, parse=False):
         Thread.__init__(self)
 
@@ -28,6 +29,7 @@ class LogReader(Thread):
         self.sleeping_time = sleeping_time
         self.parse = parse
 
+        self.total_nb_of_line_read = 0
         self.should_run = True
         self.output_queue = Queue()
 
@@ -41,14 +43,12 @@ class LogReader(Thread):
         if self.parse:
             import statistician
 
-        i = 0
-
         # print sys 2
         last_printed_time = time.time()
         since_last_printed = 0
         last_EOF = 0
         last_EOF_time = time.time()
-
+        EOF_reached_printed = False
         while self.should_run:
             # print('reader started')
             EOF = False
@@ -64,27 +64,30 @@ class LogReader(Thread):
                 if not line:
                     # print("EOF in line", i + 1)
                     EOF = True
-
                     # sys1 EOF info
                     last_EOF = 0
                     last_EOF_time = time.time()
                 else:
-                    i += 1
+                    self.total_nb_of_line_read += 1
+                    EOF_reached_printed = False
 
                     # sys1 EOF info
                     last_EOF += 1
                     if last_EOF % 10000 == 0:
-                        print('last EOF', last_EOF, 'lines ago !', time.time()-last_EOF_time,' ago')
+                        d.displayer.log(self, d.LogLevel.WARNING,
+                                        'last EOF {} lines ago, {:.02f}s ago'
+                                        ''.format(last_EOF, time.time() - last_EOF_time))
 
                     # sys2 EOF info
                     since_last_printed += 1
                     if since_last_printed % 100 == 0:
                         delta = time.time() - last_printed_time
                         if delta > 1:
-                            print(since_last_printed, 'lines parsed last', delta, 's')
+                            d.displayer.log(self, d.LogLevel.DEBUG,
+                                            '{}   lines parsed last {}s'.format(since_last_printed, delta))
+
                             last_printed_time = time.time()
                             since_last_printed = 0
-
 
                     line = line.strip()
                     if not line.startswith('#') and len(line) > 0:
@@ -93,8 +96,12 @@ class LogReader(Thread):
                         else:
                             self.output_queue.put(line)
 
-                    # print('read:', line)
+                            # print('read:', line)
 
+            if not EOF_reached_printed:
+                d.displayer.log(self, d.LogLevel.INFO, 'Log EOF reached after {} lines'
+                                                       ''.format(self.total_nb_of_line_read))
+                EOF_reached_printed = True
             # print("empty queue")
             # self.output_queue = Queue()
             # print(time.time() - t)
@@ -102,6 +109,11 @@ class LogReader(Thread):
             time.sleep(self.sleeping_time)
 
         log_file.close()
+
+    def state(self):
+        return 'total nb of read line: {}' \
+               ''.format(self.total_nb_of_line_read)
+
 
 
 def read_log(log_name):
