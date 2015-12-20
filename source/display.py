@@ -4,7 +4,6 @@
 from __future__ import (unicode_literals, absolute_import, division, print_function)
 
 from threading import Thread, Lock
-from random import randint
 
 import datetime
 import io
@@ -23,43 +22,44 @@ class LogLevel:
 
 class Displayer(Thread):
     def __init__(self, statistician=None, display_period=10,
-                 console_print_log=False, write_file_log=True, log_level=LogLevel.WARNING,
-                 debug=True):
+                 console_print_program_log=False, write_program_log_file=True, log_level=LogLevel.WARNING,
+                 debug=False):
         Thread.__init__(self)
 
         self.statistician = statistician
         self.display_period = display_period
-
+        self.console_print_program_log = console_print_program_log
+        self.write_program_log_file = write_program_log_file
         self.log_level = log_level
-        self.console_print_log = console_print_log
-        self.write_file_log = write_file_log
-        self.output_log_path = '../log/log'
 
-        self.output_log_opened = False
+        self.program_log_path = '../log/log'
+        self.program_log_opened = False
+
+        self.alert_log_path = '../log/alert_log'
+        self.alert_log_opened = False
+
         self.should_run = True
-
         self.registered_object = []
-
         self.console_lock = Lock()
 
-        if self.statistician is None and debug:
-                self.log_level = LogLevel.DEBUG
-                self.console_print_log = True
-                self.write_file_log = False
+        if debug:
+            self.log_level = LogLevel.DEBUG
+            self.console_print_program_log = True
+            self.write_program_log_file = False
 
-        if self.write_file_log:
+        if self.write_program_log_file:
             try:
-                os.remove(self.output_log_path)
+                os.remove(self.program_log_path)
             except Exception:
                 pass
             try:
-                self.output_log = io.open(self.output_log_path, 'at')
-                self.output_log_opened = True
+                self.output_log = io.open(self.program_log_path, 'at')
+                self.program__log_opened = True
             except Exception:
-                temp_c_print = self.console_print_log
-                self.console_print_log = True
-                self.log(self, LogLevel.WARNING, 'Output log file couldn\'t have been opened')
-                console_print_log = temp_c_print
+                temp_c_print = self.console_print_program_log
+                self.console_print_program_log = True
+                self.log(self, LogLevel.WARNING, "Output log file couldn't have been opened")
+                self.console_print_program_log = temp_c_print
 
         if self.statistician is None:
             self.log(self, LogLevel.WARNING, 'No statistician given')
@@ -84,10 +84,28 @@ class Displayer(Thread):
                 time.sleep(self.display_period - delta)
 
     def stat_string(self):
-        stat = self.statistician.stat.get_last_stats()
-        self.statistician.stat.reset_stat()
-        separation = '='*60
-        res = '{0}\nMost visited section: {1[0]} with {1[1]} hits.\n{0}'.format(separation, stat)
+        stats = self.statistician.stat.get_last_stats()
+
+        self.statistician.stat.reset_short_stat()
+
+        stats['separation'] = '='*60
+        stats['time'] = datetime.datetime.now()
+        stats['total_MB_bytes'] = stats['total_bytes']/(1024**2)
+        stats['display_period'] = self.display_period
+
+        if stats['total_hits']:
+            res = '{separation}' \
+                  '\n{time:%X} - Most visited section during the past {display_period}s is ' \
+                  '\'{max_section}\' with {max_hit} hits.' \
+                  '\n\tTotal hits: {total_hits},' \
+                  '\n\tTotal sent bytes: {total_bytes}, i.e. {total_MB_bytes:.03f} MB.' \
+                  '\n{separation}' \
+                  ''.format(**stats)
+        else:
+            res = '{separation}' \
+                  '\n{time:%X} - No request during the last {display_period}s!' \
+                  '\n{separation}' \
+                  ''.format(**stats)
         return res
 
     def log(self, sender, level, message):
@@ -96,10 +114,10 @@ class Displayer(Thread):
                                    LogLevel.level_name[level],
                                    sender.__class__.__name__,
                                    message))
-            if self.console_print_log:
+            if self.console_print_program_log:
                 self.lock_print(log_line)
-                # print('statistician', self.statistician, self.console_print_log, self.log_level)
-            if self.write_file_log and self.output_log_opened:
+                # print('statistician', self.statistician, self.console_print_program_log, self.log_level)
+            if self.write_program_log_file and self.program__log_opened:
                 self.output_log.write(log_line + '\n')
                 self.output_log.flush()
 
@@ -110,6 +128,9 @@ class Displayer(Thread):
     def stat_of_registered_object(self):
         return ' ;'.join([' :'.join((obj.__class__.__name__, obj.state())) for obj in self.registered_object])
 
+    def print_monitoring_alert(self, alert):
+        self.lock_print(alert)
+
 
 if __name__ == '__main__':
     pass
@@ -118,35 +139,21 @@ if __name__ == '__main__':
     # displayer.log(int, 1000, 'test1')
     # displayer.log(datetime.datetime.now(), 1000, 'test2')
 
-
     # from log_writer import random_HTTP_request, uniform_random_local_URL_maker
     # from statistician import get_section
     #
     th = Displayer(display_period=1)
-    #
+
+    # from random import randint
     # random_URL = uniform_random_local_URL_maker()
     # th.stat_string = lambda: '{0}\n' \
     #                          'Most visited section: {1[0]} with {1[1]} hits.\n' \
     #                          '{0}'.format('='*60, (get_section(random_HTTP_request(random_URL())), randint(0, 1e4)))
     #
-    # th.console_print_log = True
+    # th.console_print_program_log = True
     #
     # th.start()
     #
     # th.log(LogLevel.DEBUG, th, 'Je suis un debug 1')
     # th.log_level = LogLevel.DEBUG
     # th.log(LogLevel.DEBUG, th, 'Je suis un debug 2')
-
-
-
-
-
-# class InputThread(Thread):
-#     def __init__(self):
-#         Thread.__init__(self)
-#         self.daemon = True
-#
-#     def run(self):
-#         while True:
-#             i = raw_input()
-#             print(i)

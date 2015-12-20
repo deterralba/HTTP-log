@@ -5,26 +5,24 @@ from __future__ import (unicode_literals, absolute_import, division, print_funct
 
 import time
 
-from display import LogLevel, Displayer
-
 import display as d
 import reader
 import statistician
 
 
 if __name__ == '__main__':
-    reader_is_parsing = True
-    log_path = '../data/wtest'
-    picasso = d.Displayer(display_period=1, debug=True)
-    picasso.log_level = d.LogLevel.INFO
+    reader_is_parsing = False
+    display_period = 5
+    input_log_path = '../data/wtest'
 
     import log_writer
     shakespeare = log_writer.LogSimulator('../data/sim_config')
-    snoopy = reader.LogReader(log_path, parse=reader_is_parsing)
-    kolmogorov = statistician.Statistician(input_queue=snoopy.output_queue, parse=not reader_is_parsing)
-    picasso.statistician = kolmogorov
+    snoopy = reader.LogReader(input_log_path, parse=reader_is_parsing)
+    kolmogorov = statistician.Statistician(input_queue=snoopy.output_queue, parse=not snoopy.parse)
+    picasso = d.Displayer(statistician=kolmogorov, display_period=display_period, console_print_program_log=True)
+
     picasso.registered_object = [shakespeare, snoopy, kolmogorov]
-    picasso.log_level = d.LogLevel.DEBUG
+    # picasso.log_level = d.LogLevel.INFO
 
     shakespeare.start()
     time.sleep(0.01)
@@ -34,13 +32,12 @@ if __name__ == '__main__':
     picasso.start()
 
     shakespeare.join()
-    time.sleep(0.5)
+    time.sleep(1.5)
 
     shakespeare.should_run = False
     snoopy.should_run = False
     kolmogorov.should_run = False
     picasso.should_run = False
-
 
     # pace10 = 30  # ie pace = 10*pace10
     #
@@ -57,9 +54,6 @@ if __name__ == '__main__':
     # if with_getter:
     #     m.should_run = False
 
-
-
-
     # try:
     #     th1 = display.DisplayThread()
     #     th1.start()
@@ -71,4 +65,3 @@ if __name__ == '__main__':
     #             break
     # except (KeyboardInterrupt, SystemExit):
     #     print('goodbye !')
-

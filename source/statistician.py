@@ -25,7 +25,8 @@ class Statistics:
         self.lock = Lock()
         self.section = {}
         self.number_of_hits = 0
-        self.total_broadband = 0
+        self.total_bytes = 0
+        self.total_hits = 0
 
     def upadate_stat(self, HTTP_dict):
         with self.lock:
@@ -41,27 +42,32 @@ class Statistics:
                 else:
                     self.section[last_section] = 1
 
-            self.total_broadband += HTTP_dict['bytes']
+            self.total_bytes += HTTP_dict['bytes']
+            self.total_hits += 1
 
     def get_last_stats(self):
+        stats = dict.fromkeys(('max_section', 'max_hit', 'total_bytes', 'total_hits'), 0)
+        stats['total_bytes'] = self.total_bytes
+        stats['total_hits'] = self.total_hits
         with self.lock:
             try:
-                max_section, max_hit = max(self.section.iteritems(), key=itemgetter(1))
-                return max_section, max_hit
+                stats['max_section'], stats['max_hit'] = max(self.section.iteritems(), key=itemgetter(1))
+                return stats
             except ValueError:
-                return 0, 0
+                return stats
 
-    def reset_stat(self):
+    def reset_short_stat(self):
         with self.lock:
             self.number_of_hits = 0
             self.section.clear()
-            self.total_broadband = 0
+            self.total_bytes = 0
+            self.total_hits = 0
 
 
 class Statistician(Thread):
     """ """
 
-    def __init__(self, input_queue, sleeping_time=0.1, parse=True):
+    def __init__(self, input_queue, sleeping_time=0.1, parse=False):
         Thread.__init__(self)
 
         self.input_queue = input_queue
@@ -82,7 +88,7 @@ class Statistician(Thread):
 
             # if time.time() - last_display_time > 1:
             #     self.display()
-            #     self.stat.reset_stat()
+            #     self.stat.reset_short_stat()
             #     last_display_time = time.time()
 
             try:
@@ -99,7 +105,6 @@ class Statistician(Thread):
             # print(self.stat.section)
             if self.input_queue.qsize() == 0:
                 d.displayer.log(self, d.LogLevel.INFO, "Queue emptied")
-                # print("queue empty")
                 time.sleep(self.sleeping_time)
 
         # print(self.stat.get_last_stats())
@@ -124,12 +129,13 @@ class QueueWriter(Thread):
 
     d.Displayer(0)
 
-    def __init__(self, output_queue, pace10=1, factor=2):
+    def __init__(self, output_queue, parse=True, pace10=1, factor=2):
         Thread.__init__(self)
 
         self.output_queue = output_queue
         self.pace10 = pace10
         self.factor = factor
+        self.parse = parse
 
         self.should_run = True
 
@@ -141,7 +147,13 @@ class QueueWriter(Thread):
             line_count_second10 = 0
             start_time_second10 = time.time()
             while self.should_run and line_count_second10 < self.pace10 and time.time() - start_time_second10 < 0.1:
-                self.output_queue.put(random_log_line(date=datetime.datetime.utcnow().strftime('[%d/%b/%Y:%X +0000]')))
+
+                if self.parse:
+                    log_line = parse_line(random_log_line(date=datetime.datetime.utcnow().strftime('[%d/%b/%Y:%X +0000]')))
+                else:
+                    log_line = random_log_line(date=datetime.datetime.utcnow().strftime('[%d/%b/%Y:%X +0000]'))
+
+                self.output_queue.put(log_line)
                 line_count_second10 += 1
                 # print(line_count_second10)
 
@@ -207,14 +219,17 @@ def get_section(request):
 if __name__ == '__main__':
 
     def simulate_putter_and_getter(with_getter=True):
-        q = Queue()
-        pace10 = 30  # ie pace = 10*pace10
+        statistician_parse = True
 
-        putter = QueueWriter(q, pace10=pace10)  # pace10=1000 -> 10,000 put/sec
+        q = Queue()
+        pace10 = 1200  # ie pace = 10*pace10
+
+        putter = QueueWriter(q, parse=not statistician_parse, pace10=pace10)  # pace10=1000 -> 10,000 put/sec
         putter.start()
 
         if with_getter:
-            m = Statistician(q)
+            displayer = d.Displayer(debug=True, display_period=1)
+            m = Statistician(q, parse=statistician_parse)
             m.start()
 
         time.sleep(10)

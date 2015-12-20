@@ -4,9 +4,9 @@
 from __future__ import (unicode_literals, absolute_import, division, print_function)
 
 import time
-import Queue
+from Queue import Queue
 import io
-from threading import Thread, Lock
+from threading import Thread
 
 
 class Monitor(Thread):
@@ -64,4 +64,14 @@ def EOF_reader():
                 print("EOF in line", i+1)
                 EOF = True
             last_tell = f.tell()
-            i+=1
+            i += 1
+
+
+# class InputThread(Thread):
+#     def __init__(self):
+#         Thread.__init__(self)
+#
+#     def run(self):
+#         while True:
+#             i = raw_input()
+#             print(i)

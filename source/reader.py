@@ -22,7 +22,7 @@ class LogReader(Thread):
     ====================TODO===============
     """
 
-    def __init__(self, log_path, sleeping_time=0.1, parse=False):
+    def __init__(self, log_path, sleeping_time=0.1, parse=True):
         Thread.__init__(self)
 
         self.log_path = log_path
@@ -73,10 +73,11 @@ class LogReader(Thread):
 
                     # sys1 EOF info
                     last_EOF += 1
-                    if last_EOF % 10000 == 0:
-                        d.displayer.log(self, d.LogLevel.WARNING,
-                                        'last EOF {} lines ago, {:.02f}s ago'
-                                        ''.format(last_EOF, time.time() - last_EOF_time))
+                    if last_EOF % 5000 == 0:
+                        if time.time() - last_EOF_time > 1:
+                            d.displayer.log(self, d.LogLevel.WARNING,
+                                            'last EOF {} lines ago, {:.02f}s ago'
+                                            ''.format(last_EOF, time.time() - last_EOF_time))
 
                     # sys2 EOF info
                     since_last_printed += 1

@@ -3,7 +3,8 @@
 log_path = ../data/wtest
 line_type = HTTP_fast
 # write log lines at the speed 'x' (per seconds) during 't' seconds
-100000, 10
+
+1500, 40
 #1000, 2
 #2500, 15
 #500, 2

@@ -55,8 +55,7 @@ class LogSimulator(Thread):
 
         # the config file is read a first time to obtain the arguments and store them in param_dict
         for line in config_file:
-            if not line.strip().startswith('#'):  # commented lines are ignored
-
+            if not line.strip().startswith('#') and len(line.strip()) > 0:
                 # a line with '=' should be a parameter line, defining either 'log_path' or 'line_type'
                 if "=" in line:
                     key, value = (word.strip() for word in line.split('='))
@@ -72,7 +71,7 @@ class LogSimulator(Thread):
                         param_dict['pace'], param_dict['timeout'] = [int(i) for i in line.split(',')]
                     except Exception:
                         raise LogSimulatorConfigFileError(
-                            "Error while reading the config file at line '{}'".format(line))
+                            "Error while reading the config file at line {}".format(line))
 
                     # print(param_dict)
                     param_dict['is_simulated'] = self
@@ -88,7 +87,6 @@ class LogSimulator(Thread):
     def state(self):
         total_number = self.total_nb_of_lines_previously_written
         if self.log_w.is_alive():
-            print('is alive', self.log_w.nb_of_line_written)
             total_number += self.log_w.nb_of_line_written
         return 'Total number of line written: {}'.format(total_number)
 
@@ -114,7 +112,8 @@ class LogWriter(Thread):
         The type of line that that should be writen in the log, can be:
 
             * ``'line'``: ``lineX`` will be writen, where ``X`` is the number of the line writen (fastest)
-            * ``'HTTP_fast'``: an HTTP access line will be writen, but only the HTTP request will be random (slower)
+            * ``'HTTP_fast'``: an HTTP access line will be writen,
+            but only the HTTP request and the bytes will be random (slower)
             * ``'HTTP_slow'``: an HTTP access line will be writen, everything will be random (slowest)
 
     pace: int
@@ -329,8 +328,8 @@ def random_log_line_maker(line_type, **kwargs):
             remote_log_name = '-'
             auth_user = '-'
             request = random_HTTP_request(random_URL())
-            status = '100'
-            bytes_ = '1500'
+            status = '200'
+            bytes_ = str(randint(0, 5e3))
             return " ".join([remote_host, remote_log_name, auth_user, date, request, status, bytes_])
 
         return fast_rand
@@ -406,12 +405,12 @@ if __name__ == '__main__':
     # print(timeit.timeit("''.join(['line', str(1234)])", number=1000))
     # print(timeit.timeit("'line' + str(1234)", number=1000))
 
-
     # ===== HTTP access log line generation =====
     # local_URL = uniform_random_local_URL_maker()
     # [print(local_URL()) for i in xrange(5)]
     # [print(random_HTTP_request(local_URL())) for i in xrange(5)]
-    # [print(random_log_line_maker(i)(date=str(datetime.datetime.utcnow().strftime('[%d/%b/%Y:%X +0000]')), line_count=j))
+    # [print(random_log_line_maker(i)(date=str(datetime.datetime.utcnow().strftime('[%d/%b/%Y:%X +0000]')),
+    #                                 line_count=j))
     #     for i in ['line', 'HTTP_fast', 'HTTP_slow']
     #     for j in xrange(5)]
 
