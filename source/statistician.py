@@ -168,7 +168,8 @@ class Statistician(Thread):
             self.total_nb_of_treated_line += 1
 
             if self.input_queue.qsize() == 0:
-                d.displayer.log(self, d.LogLevel.INFO, "Queue emptied")
+                d.displayer.log(self, d.LogLevel.INFO, "Queue emptied after {} lines"
+                                                       "".format(self.total_nb_of_treated_line))
                 time.sleep(self.sleeping_time)
 
                 # print(self.stat.get_last_stats())

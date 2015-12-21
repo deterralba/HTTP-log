@@ -233,7 +233,7 @@ class LogWriter(Thread):
                 # time.sleep(1.0/self.pace)
             log_file.flush()
             self.nb_of_line_written = line_count
-            d.displayer.log(self, d.LogLevel.DEBUG, '{} lines written so far'.format(self.nb_of_line_written))
+            d.displayer.log(self, d.LogLevel.INFO, '{} lines written so far'.format(self.nb_of_line_written))
 
             delta = time.time() - start_time_second
             # print('delta :', delta)

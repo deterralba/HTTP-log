@@ -20,6 +20,8 @@ if __name__ == '__main__':
 
         thread_list = [snoopy, kolmogorov, picasso]
         picasso.registered_object = thread_list[:-1]  # the displayer is not registered by the displayer
+        if is_simulation:
+            picasso.registered_object = [log_simulator] + picasso.registered_object
 
         if is_simulation:
             log_simulator.daemon = True
@@ -96,30 +98,31 @@ if __name__ == '__main__':
         print('Wrong verbosity value, program ended.')
         sys.exit(1)
 
-    alert_param = statistician.AlertParam(short_median=1, long_median=3, threshold=1.3, time_resolution=3)
-
     try:
         if args.simulation:
             print('HTTP_log will now start a simulation with the config file {}'.format(args.path))
 
             sim_config_path = args.path
+            alert_param = statistician.AlertParam(short_median=1, long_median=3, threshold=1.5, time_resolution=5)
 
             import log_writer
             shakespeare = log_writer.LogSimulator(sim_config_path)
             simulation_param = shakespeare.get_parameters()
-
             log_path = simulation_param['log_path']
 
-            thread_list = run(log_simulator=shakespeare)
+            run(log_simulator=shakespeare)
 
             while shakespeare.is_alive():
                 shakespeare.join(0.01)
 
             sys.exit()
+
         else:
+            alert_param = statistician.AlertParam(short_median=12, long_median=120, threshold=1.5, time_resolution=10)
+
             log_path = args.path
 
-            thread_list = run()
+            run()
 
             while True:
                 time.sleep(0.2)

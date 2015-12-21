@@ -55,6 +55,10 @@ if __name__ == '__main__':
         def close_program():
             print("Terminating the program, waiting for the threads to end...")
             shakespeare.should_run = False
+            try:
+                shakespeare.log_w.should_run = False
+            except:
+                pass
             snoopy.should_run = False
             kolmogorov.should_run = False
             picasso.should_run = False
@@ -79,5 +83,5 @@ if __name__ == '__main__':
         picasso.should_run = False
 
     except KeyboardInterrupt:
-        print("KEYBOARD INTERRUPT "*10)
+        print("Keyboard interruption detected:", end=' ')
         sys.exit(0)

@@ -1,12 +1,9 @@
 line_type = HTTP_fast
 log_path = ../log/simulated_log
 # write log lines at the speed 'x' (per seconds) during 't' seconds
-500, 20
-#1000,12
-#1500, 2
-#500, 8
-#700, 2
-#1000, 30
-#100, 30
-#2500, 15
-#500, 2
+1000, 20
+2000,15
+1000, 20
+500, 15
+5000, 5
+1000, 15
