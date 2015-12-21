@@ -1,10 +1,12 @@
-# log_path is the path to the writen log file
-# mode is the type of line writen, can be: line, HTTP_fast, HTTP_slow
-log_path = ../data/wtest
 line_type = HTTP_fast
+log_path = ../log/simulated_log
 # write log lines at the speed 'x' (per seconds) during 't' seconds
-
-1500, 40
-#1000, 2
+500, 2
+#1000,12
+#1500, 2
+#500, 8
+#700, 2
+#1000, 30
+#100, 30
 #2500, 15
 #500, 2

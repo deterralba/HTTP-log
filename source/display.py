@@ -1,9 +1,10 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
+# coding: utf8
 
 from __future__ import (unicode_literals, absolute_import, division, print_function)
 
 from threading import Thread, Lock
+from string import center
 
 import datetime
 import io
@@ -41,6 +42,8 @@ class Displayer(Thread):
         self.should_run = True
         self.registered_object = []
         self.console_lock = Lock()
+        self.display_width = 80
+        self.name = 'displayer thread'
 
         if debug:
             self.log_level = LogLevel.DEBUG
@@ -50,7 +53,7 @@ class Displayer(Thread):
         if self.write_program_log_file:
             try:
                 os.remove(self.program_log_path)
-            except Exception:
+            except OSError:
                 pass
             try:
                 self.output_log = io.open(self.program_log_path, 'at')
@@ -69,6 +72,14 @@ class Displayer(Thread):
         displayer = self
 
     def run(self):
+        program_stat = ' - '.join(
+                ['{} is {}started'.format(thread.__class__.__name__, (not thread.is_alive()) * '*not* ')
+                 for thread in self.registered_object])
+        welcome_msg = '=' * self.display_width + '\n' + \
+                      center('Welcome! HTTP-log Displayer is now running', self.display_width) + '\n' + \
+                      center(program_stat, self.display_width) + '\n' + '=' * self.display_width
+        self.lock_print(welcome_msg)
+
         last_display_time = time.time()
         while self.should_run:
             delta = time.time() - last_display_time
@@ -81,31 +92,26 @@ class Displayer(Thread):
                 self.lock_print(self.stat_string())
                 last_display_time = time.time()
             else:
-                time.sleep(self.display_period - delta)
+                time.sleep(min(self.display_period - delta, 0.1))
 
     def stat_string(self):
         stats = self.statistician.stat.get_last_stats()
 
         self.statistician.stat.reset_short_stat()
 
-        stats['separation'] = '='*60
+        # stats['separation'] = '='*self.display_width
         stats['time'] = datetime.datetime.now()
-        stats['total_MB_bytes'] = stats['total_bytes']/(1024**2)
+        stats['total_MB_bytes'] = stats['total_bytes'] / (1024 ** 2)
         stats['display_period'] = self.display_period
 
         if stats['total_hits']:
-            res = '{separation}' \
-                  '\n{time:%X} - Most visited section during the past {display_period}s is ' \
+            res = '{time:%X} - Most visited section in the past {display_period}s is ' \
                   '\'{max_section}\' with {max_hit} hits.' \
                   '\n\tTotal hits: {total_hits},' \
                   '\n\tTotal sent bytes: {total_bytes}, i.e. {total_MB_bytes:.03f} MB.' \
-                  '\n{separation}' \
                   ''.format(**stats)
         else:
-            res = '{separation}' \
-                  '\n{time:%X} - No request during the last {display_period}s!' \
-                  '\n{separation}' \
-                  ''.format(**stats)
+            res = '{time:%X} - No request in the last {display_period}s!'.format(**stats)
         return res
 
     def log(self, sender, level, message):
@@ -117,7 +123,7 @@ class Displayer(Thread):
             if self.console_print_program_log:
                 self.lock_print(log_line)
                 # print('statistician', self.statistician, self.console_print_program_log, self.log_level)
-            if self.write_program_log_file and self.program__log_opened:
+            if self.write_program_log_file and self.program_log_opened:
                 self.output_log.write(log_line + '\n')
                 self.output_log.flush()
 
@@ -126,10 +132,21 @@ class Displayer(Thread):
             print(*args, **kwargs)
 
     def stat_of_registered_object(self):
-        return ' ;'.join([' :'.join((obj.__class__.__name__, obj.state())) for obj in self.registered_object])
+        return '; '.join([': '.join((obj.__class__.__name__, obj.state())) for obj in self.registered_object])
 
-    def print_monitoring_alert(self, alert):
-        self.lock_print(alert)
+    def print_new_alert(self, alert_param, long_average, short_average):
+        high_outflow = short_average / (1024 ** 2) / (alert_param.time_resolution * alert_param.short_median)
+
+        res = center('/' * 17 + ' ALERT ' + '\\' * 17, self.display_width) + '\n' + \
+              center('High traffic detected at {:%X}: outflow {:.03}MB/s'
+                     ''.format(datetime.datetime.now(), high_outflow), self.display_width)
+        self.lock_print(res)
+
+    def print_end_alert(self, alert_param, long_average, short_average):
+        low_outflow = long_average / (1024 ** 2) / (alert_param.time_resolution * alert_param.long_median)
+        res = center('\\' * 15 + ' ALERT OVER ' + '/' * 15, self.display_width) + '\n' + \
+              center('Traffic at {:%X} is {:.03}MB/s'.format(datetime.datetime.now(), low_outflow), self.display_width)
+        self.lock_print(res)
 
 
 if __name__ == '__main__':

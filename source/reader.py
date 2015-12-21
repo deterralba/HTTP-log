@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
+# coding: utf8
 
 from __future__ import (unicode_literals, absolute_import, division, print_function)
 
@@ -32,13 +32,17 @@ class LogReader(Thread):
         self.total_nb_of_line_read = 0
         self.should_run = True
         self.output_queue = Queue()
+        self.name = 'log reader thread'
 
     def run(self):
         try:
             log_file = io.open(self.log_path, 'rt')
         except IOError:
-            print('WRONG PATH TO LOG FILE')
+            print('WRONG PATH TO LOG FILE', self.log_path)
             raise
+
+        log_file.seek(0, io.SEEK_END)
+        d.displayer.log(self, d.LogLevel.DEBUG, "At EOF, ready for reading")
 
         if self.parse:
             import statistician
@@ -46,9 +50,12 @@ class LogReader(Thread):
         # print sys 2
         last_printed_time = time.time()
         since_last_printed = 0
+
         last_EOF = 0
         last_EOF_time = time.time()
-        EOF_reached_printed = False
+        EOF_reached_printed = True  # because we start at EOF
+        fist_reading_loop = True
+
         while self.should_run:
             # print('reader started')
             EOF = False
@@ -103,18 +110,20 @@ class LogReader(Thread):
                 d.displayer.log(self, d.LogLevel.INFO, 'Log EOF reached after {} lines'
                                                        ''.format(self.total_nb_of_line_read))
                 EOF_reached_printed = True
-            # print("empty queue")
-            # self.output_queue = Queue()
             # print(time.time() - t)
             # print('qsize', self.output_queue.qsize())
-            time.sleep(self.sleeping_time)
+
+            if not fist_reading_loop:
+                # d.displayer.log(self, d.LogLevel.DEBUG, 'Sleep for {}s'.format(self.sleeping_time))
+                time.sleep(self.sleeping_time)
+
+            fist_reading_loop = False
 
         log_file.close()
 
     def state(self):
         return 'total nb of read line: {}' \
                ''.format(self.total_nb_of_line_read)
-
 
 
 def read_log(log_name):
@@ -151,7 +160,7 @@ if __name__ == '__main__':
 
     # test the LogReader
     # ==================
-    rth = LogReader('../data/wtest')
+    rth = LogReader('../log/simulated_log')
     rth.start()
     time.sleep(1)
     rth.should_run = False

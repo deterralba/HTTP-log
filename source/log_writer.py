@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
+# coding: utf8
 
 from __future__ import (unicode_literals, absolute_import, division, print_function)
 
@@ -36,6 +36,37 @@ class LogSimulator(Thread):
 
         self.total_nb_of_lines_previously_written = 0
         self.log_w = None
+        self.name = 'log simulator thread'
+        self.param_dict = None
+
+    def get_parameters(self):
+        acceptable_parameters = ['line_type', 'log_path', 'erase_first']
+
+        try:
+            config_file = io.open(self.config_path)
+        except Exception:
+            raise LogSimulatorConfigFileError("Error while opening the config file '{}' for the LogSimulator, "
+                                              "is the given path correct ?".format(self.config_path))
+
+        # this is the dict used to store the arguments of LogWriter()
+        # 'erase_first': the first loop must create a clean the log_file (ie erase and recreate it)
+        self.param_dict = {'erase_first': True, 'log_path': '../log/simulated_log'}
+
+        # the config file is read a first time to obtain the arguments and store them in param_dict
+        for line in config_file:
+            if not line.strip().startswith('#') and len(line.strip()) > 0:  # comment or empty line
+                # a line with '=' should be a parameter line, defining an acceptable_parameters (see the list)
+                if "=" in line:
+                    key, value = (word.strip() for word in line.split('='))
+                    if key in acceptable_parameters:
+                        self.param_dict[key] = value
+                    else:
+                        raise LogSimulatorConfigFileError(
+                            "Error while reading the config file at line '{}'".format(line))
+
+        config_file.close()
+        # print(self.param_dict)
+        return self.param_dict
 
     def run(self):
         """Reads the config file given, and executes the commands read with the read parameters
@@ -44,44 +75,38 @@ class LogSimulator(Thread):
         ------
         LogSimulatorConfigFileError: when the config file path is incorrect or the command or parameters not recognized
         """
+
+        if self.param_dict is None:
+            self.get_parameters()
+
         try:
             config_file = io.open(self.config_path)
         except Exception:
             raise LogSimulatorConfigFileError("Error while opening the config file '{}' for the LogSimulator, "
                                               "is the given path correct ?".format(self.config_path))
 
-        # this is the dict used to store the arguments of LogWriter()
-        param_dict = {'erase_first': True}  # the first loop must create a clean the log_file (ie erase and recreate it)
-
         # the config file is read a first time to obtain the arguments and store them in param_dict
         for line in config_file:
             if not line.strip().startswith('#') and len(line.strip()) > 0:
-                # a line with '=' should be a parameter line, defining either 'log_path' or 'line_type'
-                if "=" in line:
-                    key, value = (word.strip() for word in line.split('='))
-                    if key in ['log_path', 'line_type']:
-                        param_dict[key] = value
-                    else:
+                # a line without '=' should be a command line 'pace, timeout', calling a LogWriter
+                if "=" not in line:
+                    try:
+                        self.param_dict['pace'], self.param_dict['timeout'] = [int(i) for i in line.split(',')]
+                    except Exception as e:
+                        print(e)
                         raise LogSimulatorConfigFileError(
                             "Error while reading the config file at line '{}'".format(line))
 
-                # a line without '=' should be a command line 'pace, timeout', calling a LogWriter
-                else:
-                    try:
-                        param_dict['pace'], param_dict['timeout'] = [int(i) for i in line.split(',')]
-                    except Exception:
-                        raise LogSimulatorConfigFileError(
-                            "Error while reading the config file at line {}".format(line))
-
                     # print(param_dict)
-                    param_dict['is_simulated'] = self
-                    self.log_w = LogWriter(**param_dict)
+                    self.param_dict['is_simulated'] = self
+                    self.log_w = LogWriter(**self.param_dict)
                     self.log_w.start()
-                    self.log_w.join()
+                    while self.log_w.is_alive():
+                        self.log_w.join(0.01)
 
                     # log_file shouldn't be erased again after the first loop
-                    if param_dict['erase_first']:  # only True in the first loop
-                        param_dict['erase_first'] = False
+                    if self.param_dict['erase_first']:  # only True in the first loop
+                        self.param_dict['erase_first'] = False
         config_file.close()
 
     def state(self):
@@ -89,6 +114,12 @@ class LogSimulator(Thread):
         if self.log_w.is_alive():
             total_number += self.log_w.nb_of_line_written
         return 'Total number of line written: {}'.format(total_number)
+
+    def started_first_writing(self):
+        if self.log_w is not None:
+            return self.log_w.started_writing
+        else:
+            return False
 
 
 class LogWriter(Thread):
@@ -146,6 +177,8 @@ class LogWriter(Thread):
 
         self.nb_of_line_written = 0
         self.should_run = True
+        self.name = 'log writer thread'
+        self.started_writing = False
 
     def run(self):
         """
@@ -187,6 +220,7 @@ class LogWriter(Thread):
                 line_count_second += 1
                 if line_count % 100 == 0:
                     log_file.flush()
+                    self.started_writing = True
                     self.nb_of_line_written = line_count
                     date = datetime.datetime.utcnow().strftime('[%d/%b/%Y:%X +0000]')
                     # print("reset date at", line_count)
@@ -194,6 +228,7 @@ class LogWriter(Thread):
                 # time.sleep(1.0/self.pace)
             log_file.flush()
             self.nb_of_line_written = line_count
+            d.displayer.log(self, d.LogLevel.DEBUG, '{} lines written so far'.format(self.nb_of_line_written))
 
             delta = time.time() - start_time_second
             # print('delta :', delta)
@@ -329,7 +364,7 @@ def random_log_line_maker(line_type, **kwargs):
             auth_user = '-'
             request = random_HTTP_request(random_URL())
             status = '200'
-            bytes_ = str(randint(0, 5e3))
+            bytes_ = str(randint(0, 1e3))
             return " ".join([remote_host, remote_log_name, auth_user, date, request, status, bytes_])
 
         return fast_rand
@@ -369,7 +404,7 @@ if __name__ == '__main__':
     def benchmark_LogWriter(pace_list=(5000, 10000, 25000),
                             line_type_list=('line', 'HTTP_fast', 'HTTP_slow'),
                             timeout=1):
-        log_path = '../data/wtest'
+        log_path = '../log/simulated_log'
         pace_line_type = [(pace, line_type) for pace in pace_list for line_type in line_type_list]
         for pace, line_type in pace_line_type:
             print("="*30)
@@ -383,7 +418,7 @@ if __name__ == '__main__':
 
     def simulate_writer_and_reader(with_reader=True, reader_parse=False):
         import reader
-        log_path = '../data/wtest'
+        log_path = '../log/simulated_log'
         config_path = '../data/sim_config'
         ls = LogSimulator(config_path)
         ls.start()
