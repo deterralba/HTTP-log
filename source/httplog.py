@@ -7,9 +7,65 @@ import time
 
 if __name__ == '__main__':
 
+    def run(log_simulator=None):
+        import atexit
+        import sys
+        is_simulation = False
+        if log_simulator:
+            is_simulation = True
+        # print(is_simulation)
+        snoopy = reader.LogReader(log_path)
+        kolmogorov = statistician.Statistician(input_queue=snoopy.output_queue, alert_param=alert_param)
+        picasso = d.Displayer(statistician=kolmogorov, console_print_program_log=is_simulation, log_level=log_level)
+
+        thread_list = [snoopy, kolmogorov, picasso]
+        picasso.registered_object = thread_list[:-1]  # the displayer is not registered by the displayer
+
+        if is_simulation:
+            log_simulator.daemon = True
+        for th in thread_list:
+            th.daemon = True
+
+        if is_simulation:
+            # this is the LogSimulator
+            log_simulator.start()
+            while not log_simulator.started_first_writing():
+                pass
+        for th in thread_list:
+            th.start()
+
+        def close_program():
+            print("Terminating the program, waiting for the threads to end...")
+            if is_simulation:
+                try:
+                    log_simulator.log_w.should_run = False
+                except:
+                    pass
+                log_simulator.should_run = False
+            for th in thread_list:
+                th.should_run = False
+
+            if is_simulation:
+                log_simulator.join(1)
+            for th in thread_list:
+                th.join(1)
+
+            time.sleep(1)
+
+            correctly_ended= True
+            for th in thread_list:
+                if th.is_alive():
+                    print("Program will end brutally, {} is not over".format(th.name))
+                    correctly_ended = False
+
+            print("Program {} ended!".format('correctly'*correctly_ended + 'brutally'*(not correctly_ended)))
+
+        atexit.register(close_program)
+        return thread_list
+
+
     # The output ../log folder is created
     import os
-    import atexit
     try:
         os.mkdir('../log')
     except OSError as e:
@@ -28,7 +84,7 @@ if __name__ == '__main__':
                         action="store_true", default=False)
 
     args = parser.parse_args()
-    print(args)
+    # print(args)
 
     import display as d
     import reader
@@ -42,8 +98,8 @@ if __name__ == '__main__':
 
     alert_param = statistician.AlertParam(short_median=1, long_median=3, threshold=1.3, time_resolution=3)
 
-    if args.simulation:
-        try:
+    try:
+        if args.simulation:
             print('HTTP_log will now start a simulation with the config file {}'.format(args.path))
 
             sim_config_path = args.path
@@ -51,86 +107,22 @@ if __name__ == '__main__':
             import log_writer
             shakespeare = log_writer.LogSimulator(sim_config_path)
             simulation_param = shakespeare.get_parameters()
+
             log_path = simulation_param['log_path']
 
-            snoopy = reader.LogReader(log_path)
-            kolmogorov = statistician.Statistician(input_queue=snoopy.output_queue, alert_param=alert_param)
-            picasso = d.Displayer(statistician=kolmogorov, console_print_program_log=True, log_level=args.log_level)
-
-            picasso.registered_object = [shakespeare, snoopy, kolmogorov]
-
-            shakespeare.daemon = True
-            snoopy.daemon = True
-            kolmogorov.daemon = True
-            picasso.daemon = True
-
-            shakespeare.start()
-            while not shakespeare.started_first_writing():
-                pass
-            snoopy.start()
-            kolmogorov.start()
-            picasso.start()
-
-            def close_program():
-                print("Terminating the program, waiting for the threads to end...")
-                shakespeare.should_run = False
-                snoopy.should_run = False
-                kolmogorov.should_run = False
-                picasso.should_run = False
-
-                shakespeare.join(1)
-                snoopy.join(1)
-                kolmogorov.join(1)
-                picasso.join(1)
-                print("Program correctly ended!")
-                return 0
-            atexit.register(close_program)
+            thread_list = run(log_simulator=shakespeare)
 
             while shakespeare.is_alive():
                 shakespeare.join(0.01)
 
-            shakespeare.should_run = False
-            snoopy.should_run = False
-            kolmogorov.should_run = False
-            picasso.should_run = False
-        except KeyboardInterrupt:
-            print("Keyboard interruption detected")
-            sys.exit(0)
-    else:
-        log_level = args.log_level
-        log_path = args.path
+            sys.exit()
+        else:
+            log_path = args.path
 
-        snoopy = reader.LogReader(log_path)
-        kolmogorov = statistician.Statistician(input_queue=snoopy.output_queue, alert_param=alert_param)
-        picasso = d.Displayer(statistician=kolmogorov, console_print_program_log=True, log_level=log_level)
+            thread_list = run()
 
-        picasso.registered_object = [snoopy, kolmogorov]
-
-        snoopy.daemon = True
-        kolmogorov.daemon = True
-        picasso.daemon = True
-
-        snoopy.start()
-        kolmogorov.start()
-        picasso.start()
-
-        def close_program():
-            print("Terminating the program, waiting for the threads to end...")
-            snoopy.should_run = False
-            kolmogorov.should_run = False
-            picasso.should_run = False
-
-            snoopy.join(1)
-            kolmogorov.join(1)
-            picasso.join(1)
-            print("Program correctly ended!")
-            return 0
-        atexit.register(close_program)
-
-        try:
             while True:
                 time.sleep(0.2)
-        except KeyboardInterrupt:
-            print("Keyboard interruption detected")
-            sys.exit(0)
-
+    except KeyboardInterrupt:
+        print("Keyboard interruption detected:", end=' ')
+        sys.exit(0)

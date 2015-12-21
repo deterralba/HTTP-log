@@ -57,7 +57,7 @@ class Displayer(Thread):
                 pass
             try:
                 self.output_log = io.open(self.program_log_path, 'at')
-                self.program__log_opened = True
+                self.program_log_opened = True
             except Exception:
                 temp_c_print = self.console_print_program_log
                 self.console_print_program_log = True

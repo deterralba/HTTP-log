@@ -38,6 +38,7 @@ class LogSimulator(Thread):
         self.log_w = None
         self.name = 'log simulator thread'
         self.param_dict = None
+        self.should_run = True
 
     def get_parameters(self):
         acceptable_parameters = ['line_type', 'log_path', 'erase_first']
@@ -87,7 +88,7 @@ class LogSimulator(Thread):
 
         # the config file is read a first time to obtain the arguments and store them in param_dict
         for line in config_file:
-            if not line.strip().startswith('#') and len(line.strip()) > 0:
+            if self.should_run and not line.strip().startswith('#') and len(line.strip()) > 0:
                 # a line without '=' should be a command line 'pace, timeout', calling a LogWriter
                 if "=" not in line:
                     try:
@@ -107,6 +108,10 @@ class LogSimulator(Thread):
                     # log_file shouldn't be erased again after the first loop
                     if self.param_dict['erase_first']:  # only True in the first loop
                         self.param_dict['erase_first'] = False
+
+            if not self.should_run:
+                break
+
         config_file.close()
 
     def state(self):
