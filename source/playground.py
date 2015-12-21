@@ -83,5 +83,4 @@ if __name__ == '__main__':
         picasso.should_run = False
 
     except KeyboardInterrupt:
-        print("Keyboard interruption detected:", end=' ')
         sys.exit(0)

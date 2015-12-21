@@ -108,8 +108,8 @@ class Statistics:
         short_term = self.long_term_bytes[-alert_param.short_median:]
         long_term = self.long_term_bytes[:-alert_param.short_median]
 
-        short_term_average = sum(short_term)/alert_param.short_median
-        long_term_average = sum(long_term)/alert_param.long_median
+        short_term_average = sum(short_term) / alert_param.short_median
+        long_term_average = sum(long_term) / alert_param.long_median
         res = {'alert_param': alert_param, 'short_average': short_term_average, 'long_average': long_term_average}
         if short_term_average > long_term_average * alert_param.threshold:
             res['alert'] = True
@@ -161,7 +161,10 @@ class Statistician(Thread):
             except Empty:
                 continue
             if self.parse:
-                HTTP_dict = parse_line(log_line)
+                try:
+                    HTTP_dict = parse_line(log_line)
+                except HTTPFormatError as e:
+                    d.displayer.log(self, d.LogLevel.ERROR, e.message)
             else:
                 HTTP_dict = log_line
             self.stat.upadate_stat(HTTP_dict)
@@ -212,8 +215,11 @@ class QueueWriter(Thread):
             while self.should_run and line_count_second10 < self.pace10 and time.time() - start_time_second10 < 0.1:
 
                 if self.parse:
-                    log_line = parse_line(
-                        random_log_line(date=datetime.datetime.utcnow().strftime('[%d/%b/%Y:%X +0000]')))
+                    try:
+                        log_line = parse_line(
+                                random_log_line(date=datetime.datetime.utcnow().strftime('[%d/%b/%Y:%X +0000]')))
+                    except HTTPFormatError as e:
+                        d.displayer.log(self, d.LogLevel.ERROR, e.message)
                 else:
                     log_line = random_log_line(date=datetime.datetime.utcnow().strftime('[%d/%b/%Y:%X +0000]'))
 

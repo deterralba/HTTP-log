@@ -4,19 +4,19 @@
 from __future__ import (unicode_literals, absolute_import, division, print_function)
 
 import time
+import sys
 
 if __name__ == '__main__':
 
     def run(log_simulator=None):
         import atexit
-        import sys
         is_simulation = False
         if log_simulator:
             is_simulation = True
         # print(is_simulation)
         snoopy = reader.LogReader(log_path)
         kolmogorov = statistician.Statistician(input_queue=snoopy.output_queue, alert_param=alert_param)
-        picasso = d.Displayer(statistician=kolmogorov, console_print_program_log=is_simulation, log_level=log_level)
+        picasso = d.Displayer(statistician=kolmogorov, log_level=log_level)
 
         thread_list = [snoopy, kolmogorov, picasso]
         picasso.registered_object = thread_list[:-1]  # the displayer is not registered by the displayer
@@ -27,14 +27,6 @@ if __name__ == '__main__':
             log_simulator.daemon = True
         for th in thread_list:
             th.daemon = True
-
-        if is_simulation:
-            # this is the LogSimulator
-            log_simulator.start()
-            while not log_simulator.started_first_writing():
-                pass
-        for th in thread_list:
-            th.start()
 
         def close_program():
             print("Terminating the program, waiting for the threads to end...")
@@ -47,11 +39,13 @@ if __name__ == '__main__':
             for th in thread_list:
                 th.should_run = False
 
-            if is_simulation:
-                log_simulator.join(1)
-            for th in thread_list:
-                th.join(1)
-
+            try:
+                if is_simulation:
+                    log_simulator.join(1)
+                for th in thread_list:
+                    th.join(1)
+            except:
+                pass
             time.sleep(1)
 
             correctly_ended= True
@@ -61,8 +55,16 @@ if __name__ == '__main__':
                     correctly_ended = False
 
             print("Program {} ended!".format('correctly'*correctly_ended + 'brutally'*(not correctly_ended)))
-
         atexit.register(close_program)
+
+        if is_simulation:
+            # this is the LogSimulator
+            log_simulator.start()
+            while not log_simulator.started_first_writing():
+                pass
+        for th in thread_list:
+            th.start()
+
         return thread_list
 
 
@@ -109,6 +111,7 @@ if __name__ == '__main__':
             shakespeare = log_writer.LogSimulator(sim_config_path)
             simulation_param = shakespeare.get_parameters()
             log_path = simulation_param['log_path']
+            print(log_path)
 
             run(log_simulator=shakespeare)
 
@@ -127,5 +130,4 @@ if __name__ == '__main__':
             while True:
                 time.sleep(0.2)
     except KeyboardInterrupt:
-        print("Keyboard interruption detected:", end=' ')
         sys.exit(0)

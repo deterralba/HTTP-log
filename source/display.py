@@ -10,6 +10,7 @@ import datetime
 import io
 import os
 import time
+import sys
 
 
 class LogLevel:
@@ -23,9 +24,13 @@ class LogLevel:
 
 class Displayer(Thread):
     def __init__(self, statistician=None, display_period=10,
-                 console_print_program_log=False, write_program_log_file=True, log_level=LogLevel.WARNING,
+                 console_print_program_log=True, write_program_log_file=True, log_level=LogLevel.WARNING,
                  debug=False):
         Thread.__init__(self)
+
+        # TODO explain this !
+        global displayer
+        displayer = self
 
         self.statistician = statistician
         self.display_period = display_period
@@ -58,7 +63,7 @@ class Displayer(Thread):
             try:
                 self.output_log = io.open(self.program_log_path, 'at')
                 self.program_log_opened = True
-            except Exception:
+            except (IOError, ValueError):
                 temp_c_print = self.console_print_program_log
                 self.console_print_program_log = True
                 self.log(self, LogLevel.WARNING, "Output log file couldn't have been opened")
@@ -66,10 +71,6 @@ class Displayer(Thread):
 
         if self.statistician is None:
             self.log(self, LogLevel.WARNING, 'No statistician given')
-
-        # TODO explain this !
-        global displayer
-        displayer = self
 
     def run(self):
         program_stat = ' - '.join(

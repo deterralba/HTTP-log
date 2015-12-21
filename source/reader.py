@@ -6,10 +6,12 @@ from __future__ import (unicode_literals, absolute_import, division, print_funct
 from threading import Thread
 from Queue import Queue
 
+from statistician import HTTPFormatError
 import display as d
 
 import io
 import re
+import sys
 
 import datetime
 import time
@@ -38,8 +40,10 @@ class LogReader(Thread):
         try:
             log_file = io.open(self.log_path, 'rt')
         except IOError:
-            print('WRONG PATH TO LOG FILE', self.log_path)
-            raise
+            d.displayer.log(self, d.LogLevel.CRITICAL, "wrong path for the input log '{}'".format(self.log_path))
+            from thread import interrupt_main
+            interrupt_main()
+            sys.exit()
 
         log_file.seek(0, io.SEEK_END)
         d.displayer.log(self, d.LogLevel.DEBUG, "At EOF, ready for reading")
@@ -100,7 +104,10 @@ class LogReader(Thread):
                     line = line.strip()
                     if not line.startswith('#') and len(line) > 0:
                         if self.parse:
-                            self.output_queue.put(statistician.parse_line(line))
+                            try:
+                                self.output_queue.put(statistician.parse_line(line))
+                            except HTTPFormatError as e:
+                                d.displayer.log(self, d.LogLevel.ERROR, e.message)
                         else:
                             self.output_queue.put(line)
 

@@ -13,6 +13,7 @@ import time
 
 import io
 import os
+import sys
 
 
 class LogSimulatorConfigFileError(Exception):
@@ -45,9 +46,11 @@ class LogSimulator(Thread):
 
         try:
             config_file = io.open(self.config_path)
-        except Exception:
-            raise LogSimulatorConfigFileError("Error while opening the config file '{}' for the LogSimulator, "
-                                              "is the given path correct ?".format(self.config_path))
+        except (IOError, ValueError):
+            print("LogSimulator: CRITICAL: Impossible to open '{}', is the given path correct ?".format(self.config_path))
+            from thread import interrupt_main
+            interrupt_main()
+            sys.exit()
 
         # this is the dict used to store the arguments of LogWriter()
         # 'erase_first': the first loop must create a clean the log_file (ie erase and recreate it)
@@ -82,9 +85,11 @@ class LogSimulator(Thread):
 
         try:
             config_file = io.open(self.config_path)
-        except Exception:
-            raise LogSimulatorConfigFileError("Error while opening the config file '{}' for the LogSimulator, "
-                                              "is the given path correct ?".format(self.config_path))
+        except (IOError, ValueError):
+            print("LogSimulator: CRITICAL: Impossible to open '{}', is the given path correct ?".format(self.config_path))
+            from thread import interrupt_main
+            interrupt_main()
+            sys.exit()
 
         # the config file is read a first time to obtain the arguments and store them in param_dict
         for line in config_file:
@@ -93,10 +98,10 @@ class LogSimulator(Thread):
                 if "=" not in line:
                     try:
                         self.param_dict['pace'], self.param_dict['timeout'] = [int(i) for i in line.split(',')]
-                    except Exception as e:
-                        print(e)
-                        raise LogSimulatorConfigFileError(
-                            "Error while reading the config file at line '{}'".format(line))
+                    except ValueError:
+                        d.displayer.log(self, d.LogLevel.ERROR,
+                                        "Error while reading the config file at line '{}'".format(line))
+                        continue
 
                     # print(param_dict)
                     self.param_dict['is_simulated'] = self
@@ -198,7 +203,7 @@ class LogWriter(Thread):
             try:
                 os.remove(self.log_path)
                 d.displayer.log(self, d.LogLevel.DEBUG, 'Input log file found and erased')
-            except Exception:
+            except OSError:
                 d.displayer.log(self, d.LogLevel.DEBUG, 'Input log file file not found, will be created')
 
         log_file = io.open(self.log_path, 'at')
