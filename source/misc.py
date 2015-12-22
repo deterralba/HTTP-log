@@ -15,6 +15,7 @@ import io
 
 
 class InputThread(Thread):
+    """ An always waiting for input tread, printing what it gets."""
     def __init__(self):
         Thread.__init__(self)
 
@@ -25,6 +26,7 @@ class InputThread(Thread):
 
 
 class Monitor(Thread):
+    """A thread used to demonstrate how a queue object is working"""
     def __init__(self, input_queue):
         Thread.__init__(self)
 
@@ -40,15 +42,20 @@ class Monitor(Thread):
             self.input_queue.put(123)
 
 
-def EOF_reader():
-    """this is far too slow because tell() is bugged in python 2.x"""
-    with io.open('../data/test') as f:
+def EOF_reader(path):
+    """Read a file until the EOF.
+
+    Warnings
+    --------
+    This is far too slow because tell() is bugged in python 2.x !
+    """
+    with io.open(path) as f:
         last_tell = f.tell()
         EOF = False
         i = 0
 
         while not EOF:
-            print('begining of line ', i + 1, f.tell(), f.readline().strip(), f.tell())
+            print('beginning of line ', i + 1, f.tell(), f.readline().strip(), f.tell())
             if last_tell == f.tell():
                 print("EOF in line", i + 1)
                 EOF = True
@@ -57,10 +64,15 @@ def EOF_reader():
 
 
 def read_log(log_name):
-    """Read the log file given and return a list of all the non-empty line that are not starting with '#'
+    """A "two liner" that read the log file given. Fun.
 
-    Notes
-    -----
+    Returns
+    -------
+    list of strings:
+        A list of all the non-empty line that are not starting with '#'
+
+    Note
+    ----
     The returned line are ``.strip()``-ed
     """
     with io.open(log_name, 'rt') as log_file:  # encoding can be set with 'utf_8'
@@ -68,6 +80,8 @@ def read_log(log_name):
 
 
 if __name__ == '__main__':
+
+    # The following code uses Monitor()
     q = Queue()
     m1 = Monitor(q)
     m2 = Monitor(q)

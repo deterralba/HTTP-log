@@ -14,6 +14,13 @@ import sys
 
 
 class LogLevel:
+    """
+    Stores the possible values of the log printing parameters ``log_level``.
+
+    This is an ersatz to an Enumerate object (not available in python2).
+
+    ``level_name`` is used to get the ``log_level`` name from its value.
+    """
     DEBUG = 10
     INFO = 20
     WARNING = 30
@@ -23,20 +30,52 @@ class LogLevel:
 
 
 class Displayer(Thread):
+    """
+    This thread object is responsible for the logging and the printing of the stats, the alerts and the log messages.
+
+    Notes
+    -----
+
+    Once it has been initiated (for instance with ``picasso = Displayer(debug=True)``, its :meth:`log` method can be
+    simply called from any module with the following code::
+
+        import display as d
+        d.log(self, d.LogLevel.INFO, "This is my log message !")
+
+    This is possible because in :meth:`__init__`, it defines a ``global displayer`` variable.
+
+    Attributes
+    ----------
+    statistician : Statistician
+        A reference to the statistician that will be contacted to print the stats.
+
+    display_period: int
+        The stats will be printed with a period = display_period
+
+    log_level: LogLevel
+        The limit under which received log messages will simply be ignored in the log method
+
+    console_print_program_log: bool
+        If true, the receive log messages will be printed in the console, if their log_level is above or equal to the log_level
+
+    write_program_log_file: bool
+        If true, the receive log messages will be written in the program log file, if their log_level is above or equal to the log_level
+
+    """
     def __init__(self, statistician=None, display_period=10,
                  console_print_program_log=True, write_program_log_file=True, log_level=LogLevel.WARNING,
                  debug=False):
         Thread.__init__(self)
 
-        # TODO explain this !
+        # registers the displayer reference at the module level, so that other module can access it.
         global displayer
         displayer = self
 
         self.statistician = statistician
         self.display_period = display_period
+        self.log_level = log_level
         self.console_print_program_log = console_print_program_log
         self.write_program_log_file = write_program_log_file
-        self.log_level = log_level
 
         self.program_log_path = '../log/log'
         self.program_log_opened = False
@@ -50,7 +89,7 @@ class Displayer(Thread):
         self.display_width = 80
         self.name = 'displayer thread'
 
-        if debug:
+        if debug:  # debug is a short way to define a simple Displayer object, only printing in the console
             self.log_level = LogLevel.DEBUG
             self.console_print_program_log = True
             self.write_program_log_file = False
@@ -69,6 +108,7 @@ class Displayer(Thread):
                 self.log(self, LogLevel.WARNING, "Output log file couldn't have been opened")
                 self.console_print_program_log = temp_c_print
 
+        # Here we reinitialised and open the alert log file
         try:
             os.remove(self.alert_log_path)
         except OSError:
@@ -82,6 +122,7 @@ class Displayer(Thread):
             self.log(self, LogLevel.WARNING, "Alert log file couldn't have been opened")
             self.console_print_program_log = temp_c_print
 
+        # We log an first WARNING if no statistician reference was given
         if self.statistician is None:
             self.log(self, LogLevel.WARNING, 'No statistician given')
 

@@ -11,7 +11,7 @@ Forewords
 This is the cherish documentation of my ``httplog`` program.
 I hope you will like it, I tried to make it as smooth as possible.
 
-Here is a link to my `github repository <https://github.com/deterralba/HTTP-log/>`_ from where you can download it.
+Here is a link to my `github repository <https://github.com/deterralba/HTTP-log/>`_ from where you can download the program.
 
 Let's go to the point!
 ----------------------
@@ -38,7 +38,11 @@ You will find here:
 
 * A simple user manual with a quick :ref:`overview`
 * A description of :ref:`architecture` and the reasons behind :ref:`choices`
+* A short description of :ref:`module_description`, with links towards:
 * The *usual* doc describing all the functions etc.
+
+
+
 
 ..  toctree::
     :maxdepth: 2
@@ -46,8 +50,8 @@ You will find here:
     overview
     architecture
     choices
+    module_description
     pages/modules
-
 
 Indices and tables
 ==================

@@ -107,9 +107,10 @@ Parsing the lines: optimisation
 Who should parse the line: the Statistician or the LogReader? To answer that question, I implemented the two alternatives and
 took the faster one, the one the optimally divide the work between the threads. The LogReader is now parsing the lines.
 
-Simple statistics and alerts
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Simple alerts
+^^^^^^^^^^^^^
 
+The alert monitoring system is working, but their parameters are not necessarily properly fitted for your use.
 
 Possible improvements
 ---------------------
@@ -178,4 +179,7 @@ There are no known bug, tell me if you find one!
 What's next?
 ------------
 
-Curses looks fun, data analysis also. Take a look at :mod:`playground` to change the default parameters of the simulation.
+Read :ref:`module_description` description to see were is what,
+then take a look at :mod:`playground` to change the default parameters of the simulation.
+
+For me, if think I will work on ``Curses``, it looks fun. Data analysis is also fun.
