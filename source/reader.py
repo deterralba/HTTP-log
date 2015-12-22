@@ -130,6 +130,13 @@ class LogReader(Thread):
         log_file.close()
 
     def state(self):
+        """
+        Returns
+        -------
+        string
+            Describes the present thread state
+
+        """
         return 'total nb of read line: {}' \
                ''.format(self.total_nb_of_line_read)
 

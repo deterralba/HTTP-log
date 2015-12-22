@@ -288,6 +288,8 @@ class Displayer(Thread):
             self.alert_log.flush()
 
 if __name__ == '__main__':
+
+    # Starts a Displayer and sends two messages (only one is printed, because of the log level)
     from log_writer import random_HTTP_request, uniform_random_local_URL_maker
     from reader import get_section
     from random import randint

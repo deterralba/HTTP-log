@@ -21,18 +21,23 @@ if __name__ == '__main__':
     import statistician
     import atexit
 
+    # initial configuration of the program, this is where you want to change the AlertParam. See the doc overview.
+    # (short_median=12, long_median=120, threshold=1.5, time_resolution=10) is for 2min and  20min moving averages
     alert_param = statistician.AlertParam(short_median=1, long_median=4, threshold=1.2, time_resolution=3)
-    display_period = 3
+
+    display_period = 3  # stats will be printed every 3s
     sim_config_path = '../data/sim_config'
     log_level = d.LogLevel.WARNING
 
     try:
         import log_writer
+        # shakespeare will writes the log, it gets its instructions from sim_config file at sim_config_path
         shakespeare = log_writer.LogSimulator(sim_config_path)
 
         simulation_param = shakespeare.get_parameters()
         log_path = simulation_param['log_path']
 
+        # the core threads are instantiated
         snoopy = reader.LogReader(log_path)
         kolmogorov = statistician.Statistician(input_queue=snoopy.output_queue, alert_param=alert_param)
         picasso = d.Displayer(statistician=kolmogorov, display_period=display_period, console_print_program_log=True,
@@ -40,6 +45,7 @@ if __name__ == '__main__':
 
         picasso.registered_object = [shakespeare, snoopy, kolmogorov]
 
+        # see the run function in httplog to get more information
         shakespeare.daemon = True
         snoopy.daemon = True
         kolmogorov.daemon = True
@@ -52,6 +58,7 @@ if __name__ == '__main__':
         kolmogorov.start()
         picasso.start()
 
+        # see the run function in httplog to get more information
         def close_program():
             print("Terminating the program, waiting for the threads to end...")
             shakespeare.should_run = False

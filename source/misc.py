@@ -79,6 +79,49 @@ def read_log(log_name):
         return [line.strip() for line in log_file if not line.strip().startswith('#') and len(line.strip()) > 0]
 
 
+
+def random_local_URL(factor=2, max_depth=2):
+    """
+    Returns
+    -------
+    string
+        A random local URL
+
+    Warning
+    -------
+    The repartition of the returned URL is not uniform ! ULR with 0-depth (ie '/', with or without file name)
+    are returned more often that longer URL.
+    Use :func:`uniform_random_local_URL_maker` to get a ``uniform_random_local_URL`` function.
+
+    Notes
+    -----
+
+    ``number of section = len(section) * factor``
+
+    ``max_depth`` is the highest number possible of /section/subsection/subsubsection/etc.
+    ``/archive2/blog0/archive2/page1/ -> depth = 4``
+
+
+    Examples
+    --------
+    * ``/``              <- min_depth without URL_end
+    * ``/index.html``    <- min_depth with URL_end
+    * ``/page0/``
+    * ``/archive0/blog1/``
+    * ``/blog0/picture.png``
+    * ``/page0/archive1/archive2/index.html``
+    * ``/archive2/archive0/archive2/archive2/form.php``    <- max_depth = 4, with URL_end
+     """
+    from random import randint
+    # print(factor, max_depth)
+    section = ['page', 'blog', 'archive']
+    URL_begging = [word + str(i) for i in xrange(1, factor+1) for word in
+                   section]  # add an integer at the end of the section
+    URL_end = ['picture.png', 'index.html', '']  # 'form.php', 'script.js', 'style.css', '']
+    return '/' + '/'.join([URL_begging[randint(0, len(URL_begging) - 1)] for i in xrange(randint(0, max_depth))] +
+                          [URL_end[randint(0, len(URL_end) - 1)]])  # * (randint(0, 4) >= 1)])
+
+
 if __name__ == '__main__':
 
     # The following code uses Monitor()

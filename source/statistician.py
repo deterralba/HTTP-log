@@ -17,6 +17,17 @@ import reader
 
 
 class AlertParam:
+    """
+    Used as parameters to detect alerts.
+
+    ``short_median`` and ``long_median`` are the size of the windows for the moving averages.
+
+    The unit base of ``short_median`` and ``long_median`` is ``time_resolution``, that means that
+    ``long_median=2`` with ``time_resolution=10`` will calculate an outflow average on the last ``2 * 10 = 20`` seconds.
+
+    An alert will be raised if ``short_outflow_average > long_outflow_average * threshold``.
+
+    """
     def __init__(self, short_median=12, long_median=120, threshold=1.5, time_resolution=10):
         self.short_median = int(short_median)
         self.long_median = int(long_median)
@@ -30,22 +41,40 @@ class AlertParam:
 
 
 class Statistics:
+    """ Object used by the statistician as its "notebook". This is were the stats are saved.
+
+    It calls the Displayer if an alert should be raised or shut down.
+    It is called when the stats should be printed.
+
+    Note
+    ----
+    The use of statistics.lock makes this object thread-safe.
+
+    Warnings
+    --------
+    ``number_of_hits``, ``total_bytes`` and ``total_hits`` are used for the printed stats,
+    'total' is in fact 'total since the last display'.
+
+
+    """
     def __init__(self):
         self.lock = Lock()
+
+        # used for the printed stats
+        # 'total' is in fact 'total since the last display'
         self.section = {}
         self.number_of_hits = 0
         self.total_bytes = 0
         self.total_hits = 0
 
+        # used for the alerts
         self.long_term_bytes_buffer = 0
         self.long_term_bytes = []
         self.alert_raised = False
 
     def upadate_stat(self, HTTP_dict):
+        """Update the stats with the given parse line (ie the HTTP_dict)"""
         with self.lock:
-            # print(HTTP_dict)
-            # print(get_section(HTTP_dict['request']))
-
             last_section = reader.get_section(HTTP_dict['request'])
             # print(HTTP_dict['request'], last_section)
             if last_section is not None:
@@ -62,6 +91,7 @@ class Statistics:
             self.long_term_bytes_buffer += HTTP_dict['bytes']
 
     def get_last_stats(self):
+        """Returns a stats dict, used for the regular stats printing"""
         stats = dict.fromkeys(('max_section', 'max_hit', 'total_bytes', 'total_hits'), 0)
 
         with self.lock:
@@ -74,6 +104,7 @@ class Statistics:
                 return stats
 
     def reset_short_stat(self):
+        """Called by the displayer after get_last_stats to reset the 'printing stats'"""
         with self.lock:
             self.number_of_hits = 0
             self.section.clear()
@@ -81,7 +112,12 @@ class Statistics:
             self.total_hits = 0
 
     def update_long_term(self, alert_param):
+        """
+        Update the ``long_term_bytes`` list.
+        Checks if an alert should be raised (or shut down), and raises it if necessary.
 
+        Called by the Statistician every AlertParam.time_resolution.
+        """
         with self.lock:
             self.long_term_bytes.append(self.long_term_bytes_buffer)
             self.long_term_bytes_buffer = 0
@@ -103,6 +139,7 @@ class Statistics:
                     d.displayer.print_end_alert(**emergency)
 
     def emergency(self, alert_param):
+        """Returns a dictionary with the alert parameters if there is one. Called by ``update_long_term``"""
         short_term = self.long_term_bytes[-alert_param.short_median:]
         long_term = self.long_term_bytes[:-alert_param.short_median]
 
@@ -117,7 +154,20 @@ class Statistics:
 
 
 class Statistician(Thread):
-    """ """
+    """
+    This thread object is responsible for the statistics maintenance, it has a :obj:`Statistics` object to store them and raise
+    the alerts.
+
+    It possesses the alert parameters.
+
+    Read lines are 'thread-safely' received thanks to an ``input_queue``. They should be parsed by default, but this can be changed
+    with the ``parse`` parameter.
+
+    Note
+    ----
+    Alerts are checked every ``AlertParam.time_resolution``.
+
+    """
 
     def __init__(self, input_queue, sleeping_time=0.1, parse=False,
                  alert_param=AlertParam()):
@@ -137,34 +187,29 @@ class Statistician(Thread):
         self.last_alert_check = time.time()
 
     def run(self):
-        """ """
-        # last_display_time = time.time()
+        """ Checks if an alert should be raised, checks the input queue, update the stats if necessary and starts again."""
         while self.should_run:
-            # print(self.input_queue.qsize())
-
-            # while self.input_queue.qsize() > 0:
-
-            # if time.time() - last_display_time > 1:
-            #     self.display()
-            #     self.stat.reset_short_stat()
-            #     last_display_time = time.time()
-
+            # if the alert should be check (ie every alert_param.time_resolution)
             if time.time() - self.last_alert_check > self.alert_param.time_resolution:
                 # print(time.time() - self.last_alert_check)
                 self.stat.update_long_term(self.alert_param)
                 self.last_alert_check = time.time()
 
+            # we wait for an input in the queue, with a timeout to avoid stucking the program
             try:
                 log_line = self.input_queue.get(block=True, timeout=0.1)
             except Empty:
                 continue
-            if self.parse:
+
+            if self.parse:  # False by default
                 try:
                     HTTP_dict = reader.parse_line(log_line)
                 except reader.HTTPFormatError as e:
                     d.displayer.log(self, d.LogLevel.ERROR, e.message)
             else:
                 HTTP_dict = log_line
+
+            # we update the stats
             self.stat.upadate_stat(HTTP_dict)
             self.total_nb_of_treated_line += 1
 
@@ -174,25 +219,38 @@ class Statistician(Thread):
                 time.sleep(self.sleeping_time)
 
     def state(self):
+        """
+        Returns
+        -------
+        string
+            Describes the present thread state
+
+        """
         return 'total nb of treated line: {}, in queue: {}' \
                ''.format(self.total_nb_of_treated_line, self.input_queue.qsize())
 
 
 class QueueWriter(Thread):
-    """ """
+    """
+    Used to fill the Statistician queue, to simulate a fast reading and compare the reading speed with or without parsing.
+
+    Note
+    ----
+    pace10 is the pace for 100ms, ie ``10*pace10`` entries are put in the queue every second.
+    """
 
     def __init__(self, output_queue, parse=True, pace10=1, factor=2):
         Thread.__init__(self)
 
         self.output_queue = output_queue
         self.pace10 = pace10
-        self.factor = factor
+        self.factor = factor  # used for the URL generation
         self.parse = parse
 
         self.should_run = True
 
     def run(self):
-        """ """
+        """ Puts ``n=pace10`` lines every 10th of a second in the ``output_queue`` """
         total_count = 0
         random_log_line = log_writer.random_log_line_maker('HTTP_slow', factor=self.factor)
         while self.should_run:
@@ -228,6 +286,10 @@ class QueueWriter(Thread):
 if __name__ == '__main__':
 
     def simulate_putter_and_getter(with_getter=True):
+        """"
+        Simulate a statistician connected to a LogReader (that is in fact a QueueWriter) to study the performances
+        and optimise the system
+        """
         statistician_parse = True
 
         q = Queue()
@@ -237,7 +299,7 @@ if __name__ == '__main__':
         putter.start()
 
         if with_getter:
-            displayer = d.Displayer(debug=True)
+            displayer = d.Displayer(debug=True)  # needed for d.displayer.log calls
             m = Statistician(q, parse=statistician_parse)
             m.start()
 
