@@ -21,8 +21,8 @@ If you are in a hurry, you just need:
 3. enjoy!
 
 What is happening: the command launches a *simulation* of the program: a log file: log/simulated_log, is actively written
-by a special part of the program and read in the meantime read by the monitoring program.
-You will see every 10s a summery of the traffic observed, with alerts when it's
+by a special part of the program and read at the same time by the monitoring program.
+You will see every 10s a summary of the traffic observed, with alerts when it's
 going up, and down, and up, and down...
 
 Go to the :ref:`overview` page if want to know how to use the program!
