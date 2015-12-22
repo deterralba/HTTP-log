@@ -111,7 +111,6 @@ if __name__ == '__main__':
             shakespeare = log_writer.LogSimulator(sim_config_path)
             simulation_param = shakespeare.get_parameters()
             log_path = simulation_param['log_path']
-            print(log_path)
 
             run(log_simulator=shakespeare)
 

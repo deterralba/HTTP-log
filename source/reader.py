@@ -162,7 +162,6 @@ def parse_line(line, parse_date=False):
             # the date is transformed in a datetime.datetime object
             date = HTTP_dict['date']
             # the used of a delta is necessary to get real utc time because '%z' doesn't work in python<3.2!
-            # TODO change that method that is too slow !!
             delta = datetime.timedelta(hours=int(date[-5:]) / 100)
             HTTP_dict['date'] = datetime.datetime.strptime(date[:-6], '%d/%b/%Y:%X') - delta
     except:
