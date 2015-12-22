@@ -16,8 +16,7 @@ You can find a description of what I had to do here: :ref:`subject`
 You can use the ``httplog`` command in a terminal opened in the ``source`` folder.
 Type ``httplog -h`` to see the help.
 
-* **If you do have** a HTTP access file being writen on your server, type ``httplog path`` (where ``path`` is its absolute
-  or relative to httplog's path) to start to monitor it.
+* **If you do have** a HTTP access file being writen on your server, type ``httplog path`` (where ``path`` is its relative path to httplog or absolute path) to start to monitor it.
 
 * **If you don't have** a HTTP access file being writen right now, type ``httplog path -s`` to start a simulation.
   ``path`` should be the path to a *simulation config file*, you can find two of them in the ``data`` folder:
@@ -34,7 +33,7 @@ See the ``--help`` for more information.
 What are all those folders for?
 -------------------------------
 
-There should be several folder in your ``HTTP-log`` folder. Let's have a quick look:
+There should be several folders in your ``HTTP-log`` folder. Let's have a quick look:
 
 * ``source``: obviously where the source code is. Go there to play with the program.
 * ``data``: used to store some useful test or configuration files.
