@@ -23,9 +23,19 @@ class HTTPFormatError(Exception):
 
 class LogReader(Thread):
     """
-    ====================TODO===============
-    comment and clean this code !
-    ====================TODO===============
+    This thread object is read the log file, and by default parses its lines. Then it sends them in a queue that is
+    read by the Statistician.
+
+    Attributes
+    ----------
+    log_path: string
+    sleeping_time: float
+    parse: bool
+    total_nb_of_line_read: int
+    should_run: bool
+        If False, the thread will shortly end stop its operation. Used to cleanly end the program.
+    output_queue: Queue
+    name: string
     """
 
     def __init__(self, log_path, sleeping_time=0.1, parse=True):
@@ -41,6 +51,16 @@ class LogReader(Thread):
         self.name = 'log reader thread'
 
     def run(self):
+        """
+        Opens the input log file at ``log_path``, goes to the EOF, then try to read new lines. If new lines are detected,
+        sends them to the ``output_queue`` for the ``Statistician`` (parsed or not parsed depending of the parameter).
+
+        When EOF, waits for ``sleeping_time`` and starts again.
+
+        Warnings
+        --------
+        Code should be more commented here!
+        """
         try:
             log_file = io.open(self.log_path, 'rt')
         except IOError:
@@ -62,15 +82,8 @@ class LogReader(Thread):
         fist_reading_loop = True
 
         while self.should_run:
-            # print('reader started')
             EOF = False
-            # t = time.time()
-            # temp_count = 0
             while not EOF:
-                # if temp_count == 500:
-                #     temp_count = 0
-                #     print('lines read up to', i)
-                # temp_count += 1
 
                 line = log_file.readline()
                 if not line:
@@ -145,11 +158,11 @@ def parse_line(line, parse_date=False):
     """Parse a HTTP w3c formatted line and return a dictionary with the following keys:
     ``'remote_host', 'remote_log_name', 'auth_user', 'date', 'request', 'status', 'bytes'``
 
-    Notes
-    -----
+    Note
+    ----
 
-    * ``date`` is converted in a datetime object, UTC-time
     * ``status`` and ``bytes`` are converted to ``int``
+    * ``date`` can be converted in a datetime object, UTC-time, but by default the conversion is disable (it is slow)
 
     Raises
     ------
@@ -178,7 +191,20 @@ def parse_line(line, parse_date=False):
 
 
 def get_section(request):
-    """Return the section name from a HTTP request, or None if not a proper HTTP request"""
+    """
+    Return the section name from a HTTP request, or None if not a proper HTTP request
+
+    Examples
+    --------
+
+    * ``GET /test/index/ HTTP``   =>   ``/test``
+    * ``GET /te.st/index/ HTTP``   =>   ``/te.st``
+    * ``GET /test/index.html HTTP``   =>   ``/test``
+    * ``GET /test HTTP``   =>   ``/testv
+    * ``GET /test.html HTTP``   =>   ``/``
+    * ``GET / HTTP``   =>   ``/``
+
+    """
     # section = re.match(r'^\S+\s+(/[^/ ]*)', request.strip())
     section = re.match(r'^\S+\s+(/[^ /]*)', request.strip())
     if section is not None:
@@ -189,6 +215,7 @@ def get_section(request):
 
 
 if __name__ == '__main__':
+    f
     # ===== HTTP access log line parser =====
     print(parse_line('127.0.0.1 - frank [10/Oct/2000:13:55:36 -0700] "GET /apache_pb.gif HTTP/1.0" 200 2326'))
     print(get_section("GET /section123/image.png HTTP/1.1"))

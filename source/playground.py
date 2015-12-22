@@ -5,6 +5,7 @@ from __future__ import (unicode_literals, absolute_import, division, print_funct
 
 import time
 
+
 if __name__ == '__main__':
 
     # The output ../log folder is created
@@ -91,3 +92,12 @@ if __name__ == '__main__':
 
     except KeyboardInterrupt:
         sys.exit(0)
+
+
+def READ_THE_SOURCE_CODE_FOR_THE_DOC_PLZ():
+    pass
+    """
+    This is an ugly hack because sphinx ignores ``__name__ == '__main__':``
+
+    If you read this, just ignore this function.
+    """

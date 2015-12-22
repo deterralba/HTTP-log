@@ -38,6 +38,13 @@ class LogSimulator(Thread):
     log_w: LogWriter
         A reference to the present LogWriter
 
+    name: string
+    total_nb_of_lines_previously_written: int
+    param_dict: dictionary
+
+    should_run: bool
+        If False, the thread will shortly end stop its operation. Used to cleanly end the program
+
 
     """
 
@@ -214,6 +221,7 @@ class LogWriter(Thread):
         Becomes True after the first flush() ie after a first line has been written.
         NB: Could be deduced from nb_of_line_written...
 
+    name: string
 
     """
 

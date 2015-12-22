@@ -46,9 +46,24 @@ class Statistics:
     It calls the Displayer if an alert should be raised or shut down.
     It is called when the stats should be printed.
 
+
+    Attributes
+    ----------
+    section: dictionary
+    number_of_hits: int
+    total_bytes: int
+    total_hits: int
+
+    should_run: bool
+        If False, the thread will shortly end stop its operation. Used to cleanly end the program.
+
+    long_term_bytes_buffer: int
+    long_term_bytes: list of int
+    alert_raised: bool
+
     Note
     ----
-    The use of statistics.lock makes this object thread-safe.
+    The use of ``statistics.lock`` makes this object thread-safe.
 
     Warnings
     --------
@@ -63,7 +78,6 @@ class Statistics:
         # used for the printed stats
         # 'total' is in fact 'total since the last display'
         self.section = {}
-        self.number_of_hits = 0
         self.total_bytes = 0
         self.total_hits = 0
 
@@ -106,7 +120,6 @@ class Statistics:
     def reset_short_stat(self):
         """Called by the displayer after get_last_stats to reset the 'printing stats'"""
         with self.lock:
-            self.number_of_hits = 0
             self.section.clear()
             self.total_bytes = 0
             self.total_hits = 0
@@ -162,6 +175,11 @@ class Statistician(Thread):
 
     Read lines are 'thread-safely' received thanks to an ``input_queue``. They should be parsed by default, but this can be changed
     with the ``parse`` parameter.
+
+    Attributes
+    ----------
+    should_run: bool
+        If False, the thread will shortly end stop its operation. Used to cleanly end the program.
 
     Note
     ----

@@ -11,6 +11,7 @@ This is the main module, that should be called from a terminal with args. See th
 ``httplog --help`` for more information.
 """
 
+
 if __name__ == '__main__':
 
     def run(log_simulator=None):
@@ -153,3 +154,12 @@ if __name__ == '__main__':
                 time.sleep(0.2)
     except KeyboardInterrupt:
         sys.exit(0)
+
+
+def READ_THE_SOURCE_CODE_FOR_THE_DOC_PLZ():
+    pass
+    """
+    This is an ugly hack because sphinx ignores ``__name__ == '__main__':``
+
+    If you read this, just ignore this function.
+    """

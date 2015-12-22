@@ -39,8 +39,8 @@ class Displayer(Thread):
 
     The log messages can also be printed on the console.
 
-    Notes
-    -----
+    Note
+    ----
 
     Once it has been initiated (for instance with ``picasso = Displayer(debug=True)``, its :meth:`log` method can be
     simply called from any module with the following code::
@@ -78,6 +78,8 @@ class Displayer(Thread):
 
     display_width: int
         The typical width of the terminal
+
+    name: string
     """
     def __init__(self, statistician=None, display_period=10,
                  console_print_program_log=True, write_program_log_file=True, log_level=LogLevel.WARNING,
