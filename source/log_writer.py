@@ -154,7 +154,7 @@ class LogWriter(Thread):
 
             * ``'line'``: ``lineX`` will be writen, where ``X`` is the number of the line writen (fastest)
             * ``'HTTP_fast'``: an HTTP access line will be writen,
-            but only the HTTP request and the bytes will be random (slower)
+              but only the HTTP request and the bytes will be random (slower)
             * ``'HTTP_slow'``: an HTTP access line will be writen, everything will be random (slowest)
 
     pace: int

@@ -1,3 +1,4 @@
+# see sim_config to understand what is after
 line_type = HTTP_fast
 log_path = ../log/simulated_log
 # write log lines at the speed 'x' (per seconds) during 't' seconds

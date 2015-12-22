@@ -1,5 +1,22 @@
-line_type = HTTP_fast
+#######################################################################################################################
+# This is a simulation config file, it contains information necessary for a simulation:
+# 1. the path of the simulated log file :
+# 2. the type of line written by the LogSimulator : can be HTTP_fast, HTTP_slow or line
+#       - HTTP_fast and HTTP_slow both write random valid W3C access lines, HTTP_fast is faster but 'less random',
+#         see the LogWriter doc for more info
+#         Ex: 123.12.45.78 - - [22/Dec/2015:00:49:16 +0000] "HEAD /blog2/page3/ HTTP/1.1" 200 854
+#       - line write 'line1' 'line2' 'line3' etc on each line
+# 3. a list of couple (writing speed, period of time) indicating how the log will be written
+#         Ex 1000, 20 will write 1000 lines every seconds during 20 seconds (ie 20 000 lines in total)
+#         NB a period of -1 means infinity
+#         NB the maximum writing speed is around 15 000 (test with a DEBUG log_level to see what happens!)
+########################################################################################################################
+
+# parameters lines
 log_path = ../log/simulated_log
+line_type = HTTP_fast
+
+# command lines:
 # write log lines at the speed 'x' (per seconds) during 't' seconds
 1000, 20
 2000,15
