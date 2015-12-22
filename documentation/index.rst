@@ -11,6 +11,8 @@ Forewords
 This is the cherish documentation of my ``httplog`` program.
 I hope you will like it, I tried to make it as smooth as possible.
 
+Here is a link to my `github repository <https://github.com/deterralba/HTTP-log/>`_ from where you can download it.
+
 Let's go to the point!
 ----------------------
 
@@ -24,6 +26,8 @@ What is happening: the command launches a *simulation* of the program: a log fil
 by a special part of the program and read at the same time by the monitoring program.
 You will see every 10s a summary of the traffic observed, with alerts when it's
 going up, and down, and up, and down...
+
+``CTRL + C`` will (cleanly) end the program.
 
 Go to the :ref:`overview` page if want to know how to use the program!
 

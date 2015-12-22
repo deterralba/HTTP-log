@@ -173,18 +173,6 @@ class Statistician(Thread):
                                                        "".format(self.total_nb_of_treated_line))
                 time.sleep(self.sleeping_time)
 
-                # print(self.stat.get_last_stats())
-
-                # max_l = []
-                # l = list(self.stat.section.iteritems())
-                # print(l)
-                # max_l.append(max(l, key=itemgetter(1)))
-                # print(max_l)
-                # del l[l.index(max_l[0])]
-                # print(l)
-                # l = sorted(self.stat.section.iteritems(), key=itemgetter(1), reverse=True)
-                # print(l[:3])
-
     def state(self):
         return 'total nb of treated line: {}, in queue: {}' \
                ''.format(self.total_nb_of_treated_line, self.input_queue.qsize())

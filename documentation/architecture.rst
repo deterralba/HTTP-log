@@ -6,7 +6,7 @@ The software architecture
 Introduction: a simple solution
 -------------------------------
 
-To implement what is asked in the :ref:`subject`, you really need to do only 3 main tasks:
+To implement what is asked in the :ref:`subject`, you need to carry out 3 main tasks:
 
 1. Read continuously the HTTP log file
 2. Keep some statistics on what you read
@@ -40,7 +40,7 @@ Then you start again. And again, and again:
 Why a multi-threads structure
 -----------------------------
 
-While you are doing your statistics, you are not reading the log, nor printing them.
+While you are calculating your statistics, you are not reading the log, nor printing them.
 If you need advanced stats, printing, or even parsing, you may be interested to do something like this :
 
 +------------+------------+-----------+
@@ -53,12 +53,16 @@ If you need advanced stats, printing, or even parsing, you may be interested to 
 | etc...     | etc...     | etc...    |
 +------------+------------+-----------+
 
-If you want to write a program that will be able to do more advance things in the future,
-if you want to use more than one core of your high end 32-cores processor,
+If you want low latency.
+
+If you want to write a program that will be able to do more advance things in the future.
+
+if you want to use more than one core of your high-end 32-cores processor.
+
 if you think that maybe one day you will deal with several types of input or output, or several type of clients that will
 each ask for different statistics...
 
-What you need is a multi-threads program! It is a bit more complicated, but it is much more challenging and interesting also.
+What you need is a program with several threads. It is a bit more complicated, but it is also much more challenging and interesting.
 
 
 The threads awaken
