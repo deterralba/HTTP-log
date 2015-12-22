@@ -13,11 +13,7 @@ import time
 
 import display as d
 import log_writer
-
-
-class HTTPFormatError(Exception):
-    """Raised when the HTTP access log line is not recognized"""
-    pass
+import reader
 
 
 class AlertParam:
@@ -50,14 +46,16 @@ class Statistics:
             # print(HTTP_dict)
             # print(get_section(HTTP_dict['request']))
 
-            last_section = get_section(HTTP_dict['request'])
+            last_section = reader.get_section(HTTP_dict['request'])
             # print(HTTP_dict['request'], last_section)
             if last_section is not None:
-                # TODO an error should be raised
                 if last_section in self.section:
                     self.section[last_section] += 1
                 else:
                     self.section[last_section] = 1
+            else:
+                d.displayer.log(self, d.LogLevel, "Wrong HTTP request '{}': section not found"
+                                                  "".format(HTTP_dict['request']))
 
             self.total_bytes += HTTP_dict['bytes']
             self.total_hits += 1
@@ -162,8 +160,8 @@ class Statistician(Thread):
                 continue
             if self.parse:
                 try:
-                    HTTP_dict = parse_line(log_line)
-                except HTTPFormatError as e:
+                    HTTP_dict = reader.parse_line(log_line)
+                except reader.HTTPFormatError as e:
                     d.displayer.log(self, d.LogLevel.ERROR, e.message)
             else:
                 HTTP_dict = log_line
@@ -216,9 +214,9 @@ class QueueWriter(Thread):
 
                 if self.parse:
                     try:
-                        log_line = parse_line(
+                        log_line = reader.parse_line(
                                 random_log_line(date=datetime.datetime.utcnow().strftime('[%d/%b/%Y:%X +0000]')))
-                    except HTTPFormatError as e:
+                    except reader.HTTPFormatError as e:
                         d.displayer.log(self, d.LogLevel.ERROR, e.message)
                 else:
                     log_line = random_log_line(date=datetime.datetime.utcnow().strftime('[%d/%b/%Y:%X +0000]'))
@@ -239,74 +237,27 @@ class QueueWriter(Thread):
             # print('total count', total_count)
 
 
-def parse_line(line, parse_date=False):
-    """Parse a HTTP w3c formatted line and return a dictionary with the following keys:
-    ``'remote_host', 'remote_log_name', 'auth_user', 'date', 'request', 'status', 'bytes'``
-
-    Notes
-    -----
-
-    * ``date`` is converted in a datetime object, UTC-time
-    * ``status`` and ``bytes`` are converted to ``int``
-
-    Raises
-    ------
-    HTTPFormatError
-    """
-    # 127.0.0.1 - frank [10/Oct/2000:13:55:36 -0700] "GET /apache_pb.gif HTTP/1.0" 200 2326
-
-    parsed = re.match(r'^(?P<remote_host>\S*)\s*(?P<remote_log_name>\S*)\s*(?P<auth_user>\S*)\s*\[(?P<date>.*?)\]'
-                      r'\s*\"(?P<request>.*)\"\s*(?P<status>\d*)\s*(?P<bytes>\d*)$', line.strip())
-    if parsed is None:
-        raise HTTPFormatError('incorrect HTTP format in line: {}'.format(line))
-    HTTP_dict = parsed.groupdict()
-    try:
-        HTTP_dict['status'], HTTP_dict['bytes'] = int(HTTP_dict['status']), int(HTTP_dict['bytes'])
-
-        if parse_date:
-            # the date is transformed in a datetime.datetime object
-            date = HTTP_dict['date']
-            # the used of a delta is necessary to get real utc time because '%z' doesn't work in python<3.2!
-            # TODO change that method that is too slow !!
-            delta = datetime.timedelta(hours=int(date[-5:]) / 100)
-            HTTP_dict['date'] = datetime.datetime.strptime(date[:-6], '%d/%b/%Y:%X') - delta
-    except:
-        raise HTTPFormatError('incorrect HTTP format in line: {}'.format(line))
-
-    return HTTP_dict
-
-
-def get_section(request):
-    """Return the section name from a HTTP request, or None if not a proper HTTP request"""
-    section = re.match(r'^\S+\s+(/[^/ ]*)', request.strip())
-    # section = re.match(r'^(/[^/ ]*)', request.strip())
-    if section is not None:
-        # print(request, section.group(1))
-        return section.group(1)
-    return None
-
-
 if __name__ == '__main__':
 
     def simulate_putter_and_getter(with_getter=True):
         statistician_parse = True
 
         q = Queue()
-        pace10 = 1200  # ie pace = 10*pace10
+        pace10 = 100  # ie pace = 10*pace10
 
         putter = QueueWriter(q, parse=not statistician_parse, pace10=pace10)  # pace10=1000 -> 10,000 put/sec
         putter.start()
 
         if with_getter:
-            displayer = d.Displayer(debug=True, display_period=1)
+            displayer = d.Displayer(debug=True)
             m = Statistician(q, parse=statistician_parse)
             m.start()
 
-        time.sleep(10)
+        time.sleep(3)
         putter.should_run = False
 
         if with_getter:
             m.should_run = False
 
-
     simulate_putter_and_getter(with_getter=True)
+

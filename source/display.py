@@ -151,27 +151,22 @@ class Displayer(Thread):
 
 
 if __name__ == '__main__':
-    pass
-    # print(displayer)
-    # print(displayer.__dict__)
-    # displayer.log(int, 1000, 'test1')
-    # displayer.log(datetime.datetime.now(), 1000, 'test2')
+    from log_writer import random_HTTP_request, uniform_random_local_URL_maker
+    from reader import get_section
+    from random import randint
 
-    # from log_writer import random_HTTP_request, uniform_random_local_URL_maker
-    # from statistician import get_section
-    #
-    th = Displayer(display_period=1)
+    th = Displayer(display_period=1, debug=True)
 
-    # from random import randint
-    # random_URL = uniform_random_local_URL_maker()
-    # th.stat_string = lambda: '{0}\n' \
-    #                          'Most visited section: {1[0]} with {1[1]} hits.\n' \
-    #                          '{0}'.format('='*60, (get_section(random_HTTP_request(random_URL())), randint(0, 1e4)))
-    #
-    # th.console_print_program_log = True
-    #
-    # th.start()
-    #
-    # th.log(LogLevel.DEBUG, th, 'Je suis un debug 1')
-    # th.log_level = LogLevel.DEBUG
-    # th.log(LogLevel.DEBUG, th, 'Je suis un debug 2')
+    random_URL = uniform_random_local_URL_maker()
+    th.stat_string = lambda: 'Most visited section: {0[0]} with {0[1]} hits.' \
+                             ''.format((get_section(random_HTTP_request(random_URL())), randint(0, 1e4)))
+
+    th.start()
+
+    th.log(th, LogLevel.DEBUG, 'Msg debug 1')
+    th.log_level = LogLevel.DEBUG
+    th.log(th, LogLevel.DEBUG, 'Msg debug 2')
+
+    time.sleep(3)
+
+    th.should_run = False

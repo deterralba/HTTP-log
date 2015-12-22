@@ -428,9 +428,15 @@ if __name__ == '__main__':
 
     def simulate_writer_and_reader(with_reader=True, reader_parse=False):
         import reader
+        import display as d
         log_path = '../log/simulated_log'
-        config_path = '../data/sim_config'
+        config_path = '../data/short_sim'
+
+        print('Simulation started')
+
         ls = LogSimulator(config_path)
+        picasso = d.Displayer(debug=True)
+
         ls.start()
         time.sleep(0.01)  # pause to let the LogWriter write
         if with_reader:
@@ -441,31 +447,27 @@ if __name__ == '__main__':
         time.sleep(1)
         if with_reader:
             rd.should_run = False
+        print('Simulation ended.')
 
     simulate_writer_and_reader(with_reader=True, reader_parse=True)
 
 
     # ===== Performance tests =====
-    # import timeit
-    # print(timeit.timeit("''.join(['line', str(1234)])", number=1000))
-    # print(timeit.timeit("'line' + str(1234)", number=1000))
+    import timeit
+    print(timeit.timeit("''.join(['line', str(1234)])", number=1000))
+    print(timeit.timeit("'line' + str(1234)", number=1000))
 
     # ===== HTTP access log line generation =====
-    # local_URL = uniform_random_local_URL_maker()
-    # [print(local_URL()) for i in xrange(5)]
-    # [print(random_HTTP_request(local_URL())) for i in xrange(5)]
-    # [print(random_log_line_maker(i)(date=str(datetime.datetime.utcnow().strftime('[%d/%b/%Y:%X +0000]')),
-    #                                 line_count=j))
-    #     for i in ['line', 'HTTP_fast', 'HTTP_slow']
-    #     for j in xrange(5)]
+    local_URL = uniform_random_local_URL_maker()
+    [print(local_URL()) for i in xrange(5)]
+    [print(random_HTTP_request(local_URL())) for i in xrange(5)]
+    [print(random_log_line_maker(i)(date=str(datetime.datetime.utcnow().strftime('[%d/%b/%Y:%X +0000]')),
+                                    line_count=j))
+        for i in ['line', 'HTTP_fast', 'HTTP_slow']
+        for j in xrange(5)]
 
-
-    # print(len(generate_all_URL_possible()))
-    # uniform_random_local_URL = uniform_random_local_URL_maker()
-    # print(len(set([uniform_random_local_URL() for i in xrange(50000)])))
-    # [print(s) for s in set([uniform_random_local_URL() for i in xrange(50000)]) if s not in generate_all_URL_possible()]
-    # print(len(set(generate_all_URL_possible())))
-    # print(generate_all_URL_possible())
-
-    # [print(uniform_random_local_URL()) for i in xrange(5000)]
+    # ===== URL maker test tests =====
+    print('Total number of URLs', len(generate_all_URL_possible(factor=2, max_depth=2)))
+    uniform_random_local_URL = uniform_random_local_URL_maker(factor=1, max_depth=1)
+    [print(uniform_random_local_URL()) for i in xrange(50)]
 

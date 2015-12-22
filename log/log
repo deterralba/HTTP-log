@@ -1,1 +1,6 @@
-2015-12-21T22:10:16.391000 : DEBUG : LogReader : wrong path for the input log '../log/simulated_log2'
+2015-12-22T01:37:37.855000 : DEBUG : LogWriter : Input log file found and erased
+2015-12-22T01:37:37.862000 : DEBUG : LogReader : At EOF, ready for reading
+2015-12-22T01:37:37.892000 : INFO : LogWriter : 1000 lines written so far
+2015-12-22T01:37:37.909000 : INFO : LogReader : Log EOF reached after 714 lines
+2015-12-22T01:37:37.913000 : INFO : Statistician : Queue emptied after 714 lines
+2015-12-22T01:37:38.856000 : DEBUG : LogWriter : End writting after 1000 lines in 1.0020s
