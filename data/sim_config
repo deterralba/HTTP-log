@@ -19,7 +19,7 @@ line_type = HTTP_fast
 # command lines:
 # write log lines at the speed 'x' (per seconds) during 't' seconds
 1000, 20
-2000,15
+2000, 10
 1000, 20
 500, 15
 5000, 5

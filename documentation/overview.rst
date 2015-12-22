@@ -18,6 +18,30 @@ an example of HTTP access log lines
 
 You can find a description of what I had to do here: :ref:`subject`.
 
+This is a typical output:
+::
+
+   ================================================================================
+                      Welcome! HTTP-log Displayer is now running
+       LogSimulator is started - LogReader is started - Statistician is started
+   ================================================================================
+   16:35:47 - Most visited section in the past 10s is '/page1' with 837 hits.
+           Total hits: 9700,
+           Total sent bytes: 4835489, i.e. 4.611 MB.
+   16:35:57 - Most visited section in the past 10s is '/page2' with 870 hits.
+           Total hits: 10000,
+           Total sent bytes: 4992571, i.e. 4.761 MB.
+                      ///////////////// ALERT \\\\\\\\\\\\\\\\\
+             High traffic detected: 12/22/15 16:36:02: outflow 0.957MB/s
+   16:36:07 - Most visited section in the past 10s is '/page2' with 1717 hits.
+           Total hits: 20000,
+           Total sent bytes: 9949869, i.e. 9.489 MB.
+                      \\\\\\\\\\\\\\\ ALERT OVER ///////////////
+                  End of alert: 12/22/15 16:36:07: outflow 0.213MB/s
+   Terminating the program, waiting for the threads to end...
+   Program correctly ended!
+
+
 101 User Manual
 ---------------
 
@@ -40,6 +64,25 @@ Use ``-l DEBUG`` to set the log level to ``DEBUG``, other levels are ``INFO``, `
 Use ``-s`` to indicate that you run a simulation, if you do.
 
 See the ``--help`` for more information.
+
+The alerts
+^^^^^^^^^^
+
+The alert monitoring system uses moving averages, and raises an alert in a short moving average is above
+a long one, with a certain threshold coefficient. That implies that if the traffic is not increasing or
+decreasing *brutally*, no alert (or end-alert) will be raised.
+
+.. note:: The alert system is based on the real outflow (in bytes), not the number of requests received.
+
+.. note:: You can change the alert monitoring parameters in the :mod:`httplog` (for a command line execution) and
+   :mod:`playground`.
+
+   Change the line ``AlertParam(short_median=12, long_median=120, threshold=1.5, time_resolution=10)``.
+   The unit base of ``short_median`` and ``long_median`` is ``time_resolution``, that means that
+   ``long_median=2`` with ``time_resolution=10`` will calculate an outflow average on the last ``2 * 10 = 20`` seconds.
+   An alert will be raised if ``short_outflow_average > long_outflow_average * threshold``.
+
+
 
 What are all those folders for?
 -------------------------------
