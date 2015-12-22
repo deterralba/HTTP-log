@@ -61,13 +61,26 @@ class Displayer(Thread):
             except OSError:
                 pass
             try:
-                self.output_log = io.open(self.program_log_path, 'at')
+                self.program_log = io.open(self.program_log_path, 'at')
                 self.program_log_opened = True
             except (IOError, ValueError):
                 temp_c_print = self.console_print_program_log
                 self.console_print_program_log = True
                 self.log(self, LogLevel.WARNING, "Output log file couldn't have been opened")
                 self.console_print_program_log = temp_c_print
+
+        try:
+            os.remove(self.alert_log_path)
+        except OSError:
+            pass
+        try:
+            self.alert_log = io.open(self.alert_log_path, 'at')
+            self.alert_log_opened = True
+        except (IOError, ValueError):
+            temp_c_print = self.console_print_program_log
+            self.console_print_program_log = True
+            self.log(self, LogLevel.WARNING, "Alert log file couldn't have been opened")
+            self.console_print_program_log = temp_c_print
 
         if self.statistician is None:
             self.log(self, LogLevel.WARNING, 'No statistician given')
@@ -94,6 +107,15 @@ class Displayer(Thread):
                 last_display_time = time.time()
             else:
                 time.sleep(min(self.display_period - delta, 0.1))
+
+        try:
+            self.alert_log.close()
+        except:
+            pass
+        try:
+            self.program_log.close()
+        except:
+            pass
 
     def stat_string(self):
         stats = self.statistician.stat.get_last_stats()
@@ -125,8 +147,8 @@ class Displayer(Thread):
                 self.lock_print(log_line)
                 # print('statistician', self.statistician, self.console_print_program_log, self.log_level)
             if self.write_program_log_file and self.program_log_opened:
-                self.output_log.write(log_line + '\n')
-                self.output_log.flush()
+                self.program_log.write(log_line + '\n')
+                self.program_log.flush()
 
     def lock_print(self, *args, **kwargs):
         with self.console_lock:
@@ -138,17 +160,25 @@ class Displayer(Thread):
     def print_new_alert(self, alert_param, long_average, short_average):
         high_outflow = short_average / (1024 ** 2) / (alert_param.time_resolution * alert_param.short_median)
 
-        res = center('/' * 17 + ' ALERT ' + '\\' * 17, self.display_width) + '\n' + \
-              center('High traffic detected at {:%X}: outflow {:.03}MB/s'
-                     ''.format(datetime.datetime.now(), high_outflow), self.display_width)
+        msg = 'High traffic detected: {:%x %X}: outflow {:.03}MB/s'.format(datetime.datetime.now(), high_outflow)
+        res = center('/' * 17 + ' ALERT ' + '\\' * 17, self.display_width) + '\n' + center(msg, self.display_width)
+
         self.lock_print(res)
+        if self.alert_log_opened:
+            self.alert_log.write(msg + '\n')
+            self.alert_log.flush()
 
     def print_end_alert(self, alert_param, long_average, short_average):
         low_outflow = long_average / (1024 ** 2) / (alert_param.time_resolution * alert_param.long_median)
-        res = center('\\' * 15 + ' ALERT OVER ' + '/' * 15, self.display_width) + '\n' + \
-              center('Traffic at {:%X} is {:.03}MB/s'.format(datetime.datetime.now(), low_outflow), self.display_width)
-        self.lock_print(res)
 
+        msg = 'End of alert: {:%x %X}: outflow {:.03}MB/s'.format(datetime.datetime.now(), low_outflow)
+        res = center('\\' * 15 + ' ALERT OVER ' + '/' * 15, self.display_width) + '\n' + \
+              center(msg, self.display_width)
+
+        self.lock_print(res)
+        if self.alert_log_opened:
+            self.alert_log.write(msg + '\n')
+            self.alert_log.flush()
 
 if __name__ == '__main__':
     from log_writer import random_HTTP_request, uniform_random_local_URL_maker

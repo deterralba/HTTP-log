@@ -21,10 +21,10 @@ if __name__ == '__main__':
     import statistician
     import atexit
 
-    alert_param = statistician.AlertParam(short_median=1, long_median=6, threshold=3, time_resolution=3)
+    alert_param = statistician.AlertParam(short_median=1, long_median=4, threshold=1.2, time_resolution=3)
     display_period = 3
     sim_config_path = '../data/sim_config'
-    log_level = d.LogLevel.DEBUG
+    log_level = d.LogLevel.WARNING
 
     try:
         import log_writer
