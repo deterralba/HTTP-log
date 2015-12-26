@@ -98,12 +98,13 @@ I want to change your code
 --------------------------
 
 I recommend you to create a virtual environment with python 2.7 so that your own python installation doesn't conflict
-with the program requirements. First install ``virtualenv``, then create your virtual environment and finally
+with the program requirements. First install ``virtualenv``, then create your virtual environment, activate it, and finally
 install the dependencies stored in ``data/requierements.txt``.
 ::
 
     pip install virtualenv
     virtualenv python27 -p /usr/bin/python2.7
+    source python27/bin/activate  # or simply 'python27\Scripts\activate' if you are on Windows
     pip install -r data/requirements.txt
 
 We now have the same dev environment. You can use ``playground.py`` if you want to launch the program from your IDE,
