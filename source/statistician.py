@@ -51,16 +51,21 @@ class Statistics:
     Attributes
     ----------
     section: dictionary
-    number_of_hits: int
+        The keys are the hit sections, values are the number of hits for each section.
     total_bytes: int
+        Sum of the bytes sent.
     total_hits: int
+        Total number of hits.
 
     should_run: bool
         If False, the thread will shortly end stop its operation. Used to cleanly end the program.
 
     long_term_bytes_buffer: int
+        Stores the sum of bytes sent during a certain time, then is appended to the long_term_bytes list and reseted.
     long_term_bytes: list of int
+        List that stores the evolution of the number of sent bytes, used to compute moving average.
     alert_raised: bool
+        True if an alert has been raised and not shut down.
 
     Note
     ----
