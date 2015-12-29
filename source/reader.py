@@ -23,19 +23,28 @@ class HTTPFormatError(Exception):
 
 class LogReader(Thread):
     """
-    This thread object is read the log file, and by default parses its lines. Then it sends them in a queue that is
+    This thread object reads the given log file, and by default parses its lines. Then it sends them in a queue that is
     read by the Statistician.
+
+    To read the file, the LogReader read the lines until the EOF, then waits for a given time: ``sleeping_time``.
 
     Attributes
     ----------
     log_path: string
+        The path to the log file. The program is terminated if the log file cannot be opened.
     sleeping_time: float
+        The time in second during which the program will sleep after the EOF.
     parse: bool
+        If True, the LogReader will parse the read line with the :func:`parse` function before it puts it in the Queue.
+        If False, the Statistician will have to parse it itself.
     total_nb_of_line_read: int
+        Counts the number of lines that have been read since the beginning, including the empty and commented lines.
     should_run: bool
         If False, the thread will shortly end stop its operation. Used to cleanly end the program.
     output_queue: Queue
+        The queue where the read lines will be put.
     name: string
+        The name of the thread: 'log reader thread'
     """
 
     def __init__(self, log_path, sleeping_time=0.1, parse=True):
@@ -53,14 +62,20 @@ class LogReader(Thread):
     def run(self):
         """
         Opens the input log file at ``log_path``, goes to the EOF, then try to read new lines. If new lines are detected,
-        sends them to the ``output_queue`` for the ``Statistician`` (parsed or not parsed depending of the parameter).
+        sends them to the ``output_queue`` for the ``Statistician`` (parsed or not parsed depending of ``self.parse``).
 
         When EOF, waits for ``sleeping_time`` and starts again.
 
-        Warnings
-        --------
-        Code should be more commented here!
+        Note
+        ----
+
+        There are two printing systems: sys1 and sys2, used to send log messages
+
+        * sys1 is used to print WARNING log messages when the LogReader is too slow: last_EOF is big
+        * sys2 is used to print DEBUG log messages with the number of line read every second
+
         """
+        # opens the file
         try:
             log_file = io.open(self.log_path, 'rt')
         except IOError:
@@ -69,16 +84,21 @@ class LogReader(Thread):
             interrupt_main()
             sys.exit()
 
+        # goes to the EOF
         log_file.seek(0, io.SEEK_END)
         d.displayer.log(self, d.LogLevel.DEBUG, "At EOF, ready for reading")
 
-        # print sys 2
+        # print sys2: used to print DEBUG log messages with the number of line read every second
         last_printed_time = time.time()
         since_last_printed = 0
 
+        # last_EOF counts the number of lines since the last EOF
         last_EOF = 0
         last_EOF_time = time.time()
+        # EOF_reached_printed is used for log messages 
         EOF_reached_printed = True  # because we start at EOF
+
+        # this is used to avoid a first sleeping time when the program starts and we are at EOF
         fist_reading_loop = True
 
         while self.should_run:
@@ -87,9 +107,8 @@ class LogReader(Thread):
 
                 line = log_file.readline()
                 if not line:
-                    # print("EOF in line", i + 1)
                     EOF = True
-                    # sys1 EOF info
+                    # sys1 EOF info: used to print WARNING log messages when the LogReader is too slow: last_EOF is big
                     last_EOF = 0
                     last_EOF_time = time.time()
                 else:
@@ -115,7 +134,9 @@ class LogReader(Thread):
                             last_printed_time = time.time()
                             since_last_printed = 0
 
+                    # lines are strip-ed, ie white spaces around the line are removed
                     line = line.strip()
+                    # Only non-empty and non-commented lines are sent to the queue
                     if not line.startswith('#') and len(line) > 0:
                         if self.parse:
                             try:
@@ -125,16 +146,13 @@ class LogReader(Thread):
                         else:
                             self.output_queue.put(line)
 
-                            # print('read:', line)
-
             if not EOF_reached_printed:
                 d.displayer.log(self, d.LogLevel.INFO, 'Log EOF reached after {} lines'
                                                        ''.format(self.total_nb_of_line_read))
                 EOF_reached_printed = True
-            # print(time.time() - t)
-            # print('qsize', self.output_queue.qsize())
 
             if not fist_reading_loop:
+                # next instruction is commented because it spams the log...
                 # d.displayer.log(self, d.LogLevel.DEBUG, 'Sleep for {}s'.format(self.sleeping_time))
                 time.sleep(self.sleeping_time)
 
@@ -215,7 +233,7 @@ def get_section(request):
 
 
 if __name__ == '__main__':
-    f
+
     # ===== HTTP access log line parser =====
     print(parse_line('127.0.0.1 - frank [10/Oct/2000:13:55:36 -0700] "GET /apache_pb.gif HTTP/1.0" 200 2326'))
     print(get_section("GET /section123/image.png HTTP/1.1"))
