@@ -18,15 +18,16 @@ import reader
 
 class AlertParam:
     """
-    Used as parameters to detect alerts.
+    Stores the parameters used in the alert detection process.
 
     ``short_median`` and ``long_median`` are the size of the windows for the moving averages.
 
-    The unit base of ``short_median`` and ``long_median`` is ``time_resolution``, that means that
-    ``long_median=2`` with ``time_resolution=10`` will calculate an outflow average on the last ``2 * 10 = 20`` seconds.
-
     An alert will be raised if ``short_outflow_average > long_outflow_average * threshold``.
 
+    Warnings
+    --------
+    The unit base of ``short_median`` and ``long_median`` is ``time_resolution``, that means that
+    ``long_median=2`` with ``time_resolution=10`` will calculate an outflow average on the last ``2 * 10 = 20`` seconds.
     """
     def __init__(self, short_median=12, long_median=120, threshold=1.5, time_resolution=10):
         self.short_median = int(short_median)

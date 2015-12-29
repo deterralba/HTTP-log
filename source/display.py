@@ -41,7 +41,6 @@ class Displayer(Thread):
 
     Note
     ----
-
     Once it has been initiated (for instance with ``picasso = Displayer(debug=True)``, its :meth:`log` method can be
     simply called from any module with the following code::
 
@@ -275,7 +274,6 @@ class Displayer(Thread):
 
         Note
         ----
-
         Could be merged with ``print_new_alert``
         """
         low_outflow = long_average / (1024 ** 2) / (alert_param.time_resolution * alert_param.long_median)
@@ -311,3 +309,5 @@ if __name__ == '__main__':
     time.sleep(3)
 
     th.should_run = False
+
+
