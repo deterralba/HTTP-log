@@ -139,7 +139,7 @@ and the corresponding methods in :obj:`display.Displayer`.
 Displayer and UI/UX
 ^^^^^^^^^^^^^^^^^^^
 
-The actual UX is quite simple : a command line to start, a keyboard interruption to end it, a few log files written and that's it.
+The actual UX is quite simple: a command line to start, a keyboard interruption to end it, a few log files written and that's it.
 
 ``Curses`` could be used to create a real interface (and break the windows compatibility...). The thread could be forked
 and it could become a background daemon (like httpd).
@@ -168,8 +168,19 @@ Service optimisation
 You have data. This is nice, let's use it!
 
 You could analyse your log file to detect which web page
-generate the most outgoing traffic, and try to minimise its impact. You could try to detect strange behaviors,
+generate the most outgoing traffic, and try to minimise its impact. You could try to detect strange behaviours,
 there are several interesting uses that one could think of for your logs.
+
+*Unixification*
+^^^^^^^^^^^^^^^
+
+The program structure could be adapted to the unix spirit *"small single task tools"*. For instance, the ``LogSimulator`` could 
+be a separate program, whose output could be redirected in the standard input of ``httplog``. The output could be redirected with the ``>`` syntaxe. The program could also easily be run in the background with a ``nohup httplog path &``.
+
+Log rotate
+^^^^^^^^^^
+
+What happens when logrotate rotates the log? Nobody knows, this should be handled.
 
 Bug fix
 ^^^^^^^
@@ -179,7 +190,6 @@ There are no known bug, tell me if you find one!
 What's next?
 ------------
 
-Read :ref:`module_description` description to see were is what,
+Read :ref:`module_description` description to see where is what,
 then take a look at :mod:`playground` to change the default parameters of the simulation.
 
-For me, if think I will work on ``Curses``, it looks fun. Data analysis is also fun.
